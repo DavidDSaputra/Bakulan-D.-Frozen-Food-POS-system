@@ -335,12 +335,30 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
   List<ProductCategory> _mergeCategories(
     List<ProductCategory> firestoreCategories,
   ) {
-    final categories = <String, ProductCategory>{
-      for (final category in _defaultCategories) category.id: category,
-      for (final category in firestoreCategories) category.id: category,
-    };
+    final categories = <String, ProductCategory>{};
+    final names = <String>{};
+
+    for (final category in _defaultCategories) {
+      categories[category.id] = category;
+      names.add(_normalizeCategoryName(category.namaKategori));
+    }
+
+    for (final category in firestoreCategories) {
+      final normalizedName = _normalizeCategoryName(category.namaKategori);
+      if (categories.containsKey(category.id) ||
+          names.contains(normalizedName)) {
+        continue;
+      }
+      categories[category.id] = category;
+      names.add(normalizedName);
+    }
+
     return categories.values.toList()
       ..sort((a, b) => a.namaKategori.compareTo(b.namaKategori));
+  }
+
+  String _normalizeCategoryName(String value) {
+    return value.trim().replaceAll(RegExp(r'[\s_\-]+'), ' ').toLowerCase();
   }
 }
 
