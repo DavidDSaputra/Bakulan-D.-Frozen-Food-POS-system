@@ -31,35 +31,26 @@ class _AppShellState extends State<AppShell> {
 
     return Scaffold(
       appBar: AppBar(
-        backgroundColor: Colors.transparent,
-        foregroundColor: scheme.onPrimary,
-        flexibleSpace: DecoratedBox(
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: [
-                scheme.primary,
-                Color.lerp(scheme.primary, scheme.tertiary, .34)!,
-              ],
-            ),
-          ),
-        ),
+        backgroundColor: scheme.surface,
+        foregroundColor: scheme.onSurface,
+        surfaceTintColor: Colors.transparent,
+        shadowColor: Colors.transparent,
+        elevation: 0,
         title: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
               tabs[_selectedIndex].title,
               style: TextStyle(
-                color: scheme.onPrimary,
-                fontSize: 20,
+                color: scheme.onSurface,
+                fontSize: 22,
                 fontWeight: FontWeight.w900,
               ),
             ),
             Text(
               'Bakulan D. Frozen',
               style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                color: scheme.onPrimary.withValues(alpha: .78),
+                color: scheme.onSurfaceVariant,
                 fontWeight: FontWeight.w600,
               ),
             ),

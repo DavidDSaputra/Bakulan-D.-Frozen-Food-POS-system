@@ -57,20 +57,13 @@ class DashboardScreen extends StatelessWidget {
                   Container(
                     padding: const EdgeInsets.all(18),
                     decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
-                        colors: [
-                          scheme.primary,
-                          Color.lerp(scheme.primary, scheme.tertiary, .44)!,
-                        ],
-                      ),
-                      borderRadius: BorderRadius.circular(24),
+                      color: scheme.primary,
+                      borderRadius: BorderRadius.circular(22),
                       boxShadow: [
                         BoxShadow(
-                          color: scheme.primary.withValues(alpha: .26),
-                          offset: const Offset(0, 18),
-                          blurRadius: 34,
+                          color: scheme.primary.withValues(alpha: .18),
+                          offset: const Offset(0, 12),
+                          blurRadius: 24,
                         ),
                       ],
                     ),
@@ -208,7 +201,7 @@ class DashboardScreen extends StatelessWidget {
                           crossAxisCount: 2,
                           mainAxisSpacing: 12,
                           crossAxisSpacing: 12,
-                          childAspectRatio: .98,
+                          childAspectRatio: 1.26,
                         ),
                     children: [
                       StatCard(
