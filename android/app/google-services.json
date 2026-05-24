@@ -1,0 +1,118 @@
+{
+  "project_info": {
+    "project_number": "1053962346056",
+    "project_id": "myprojectfirebas-86a91",
+    "storage_bucket": "myprojectfirebas-86a91.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1053962346056:android:759ef7f598de8e77a6827d",
+        "android_client_info": {
+          "package_name": "com.bakulandfrozen.bakulan_d_frozen"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "1053962346056-luaaa8t74arguinv5fib9ito6nse7ena.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAuu5qjZZ9BUah73ihiKfZj8pwKRCElOlQ"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "1053962346056-luaaa8t74arguinv5fib9ito6nse7ena.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "1053962346056-233im6trgq1du1s72s63i51ho3so9psu.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.example.diecastStore"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1053962346056:android:a0a96923cbacaa65a6827d",
+        "android_client_info": {
+          "package_name": "com.david.flutter"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "1053962346056-luaaa8t74arguinv5fib9ito6nse7ena.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAuu5qjZZ9BUah73ihiKfZj8pwKRCElOlQ"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "1053962346056-luaaa8t74arguinv5fib9ito6nse7ena.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "1053962346056-233im6trgq1du1s72s63i51ho3so9psu.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.example.diecastStore"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1053962346056:android:e63b470ff21ce34ea6827d",
+        "android_client_info": {
+          "package_name": "com.example.flutter_application_1"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "1053962346056-luaaa8t74arguinv5fib9ito6nse7ena.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAuu5qjZZ9BUah73ihiKfZj8pwKRCElOlQ"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "1053962346056-luaaa8t74arguinv5fib9ito6nse7ena.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "1053962346056-233im6trgq1du1s72s63i51ho3so9psu.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.example.diecastStore"
+              }
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

@@ -1,0 +1,161 @@
+import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+
+import '../models/product.dart';
+import '../providers/cart_provider.dart';
+import '../providers/product_provider.dart';
+import '../utils/formatters.dart';
+import '../utils/snackbar.dart';
+import '../widgets/empty_state.dart';
+import '../widgets/loading_indicator.dart';
+import '../widgets/product_tile.dart';
+import 'payment_screen.dart';
+
+class SalesScreen extends StatefulWidget {
+  const SalesScreen({super.key});
+
+  @override
+  State<SalesScreen> createState() => _SalesScreenState();
+}
+
+class _SalesScreenState extends State<SalesScreen> {
+  final _searchController = TextEditingController();
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  void _addToCart(Product product) {
+    try {
+      context.read<CartProvider>().addProduct(product);
+      showAppSnackBar(context, '${product.namaBarang} ditambahkan');
+    } catch (error) {
+      showAppSnackBar(
+        context,
+        error.toString().replaceAll('Exception: ', ''),
+        isError: true,
+      );
+    }
+  }
+
+  void _goToPayment() {
+    final cart = context.read<CartProvider>();
+    if (cart.isEmpty) {
+      showAppSnackBar(context, 'Keranjang masih kosong', isError: true);
+      return;
+    }
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => PaymentScreen(items: cart.items)),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
+          child: TextField(
+            controller: _searchController,
+            onChanged: (_) => setState(() {}),
+            decoration: const InputDecoration(
+              hintText: 'Cari barang untuk dijual',
+              prefixIcon: Icon(Icons.search_rounded),
+            ),
+          ),
+        ),
+        Expanded(
+          child: StreamBuilder<List<Product>>(
+            stream: context.read<ProductProvider>().watchProducts(),
+            builder: (context, snapshot) {
+              if (!snapshot.hasData) return const AppLoadingIndicator();
+
+              final query = _searchController.text.trim().toLowerCase();
+              final products = snapshot.data!
+                  .where(
+                    (product) =>
+                        product.namaBarang.toLowerCase().contains(query),
+                  )
+                  .toList();
+
+              if (products.isEmpty) {
+                return const EmptyState(
+                  icon: Icons.point_of_sale_rounded,
+                  title: 'Barang tidak ditemukan',
+                  subtitle:
+                      'Pastikan barang sudah ditambahkan pada menu Barang.',
+                );
+              }
+
+              return ListView.separated(
+                padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+                itemBuilder: (context, index) {
+                  final product = products[index];
+                  return ProductTile(
+                    product: product,
+                    trailing: IconButton.filled(
+                      tooltip: 'Tambah ke keranjang',
+                      onPressed: product.isOutOfStock
+                          ? null
+                          : () => _addToCart(product),
+                      icon: const Icon(Icons.add_shopping_cart_rounded),
+                    ),
+                  );
+                },
+                separatorBuilder: (_, _) => const SizedBox(height: 10),
+                itemCount: products.length,
+              );
+            },
+          ),
+        ),
+        Consumer<CartProvider>(
+          builder: (context, cart, _) {
+            return SafeArea(
+              top: false,
+              child: Container(
+                padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
+                decoration: BoxDecoration(
+                  color: Theme.of(context).colorScheme.surface,
+                  border: Border(
+                    top: BorderSide(
+                      color: Theme.of(context).colorScheme.outlineVariant,
+                    ),
+                  ),
+                ),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            '${cart.totalQty} item',
+                            style: const TextStyle(fontWeight: FontWeight.w800),
+                          ),
+                        ),
+                        Text(
+                          AppFormatters.rupiah(cart.totalPrice),
+                          style: Theme.of(context).textTheme.titleMedium
+                              ?.copyWith(fontWeight: FontWeight.w900),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 10),
+                    FilledButton.icon(
+                      onPressed: cart.isEmpty ? null : _goToPayment,
+                      icon: const Icon(Icons.payments_rounded),
+                      label: const Text('Lanjut Pembayaran'),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          },
+        ),
+      ],
+    );
+  }
+}
