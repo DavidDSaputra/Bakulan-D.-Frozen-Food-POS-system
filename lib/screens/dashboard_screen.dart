@@ -201,7 +201,7 @@ class DashboardScreen extends StatelessWidget {
                           crossAxisCount: 2,
                           mainAxisSpacing: 12,
                           crossAxisSpacing: 12,
-                          childAspectRatio: 1.26,
+                          childAspectRatio: .94,
                         ),
                     children: [
                       StatCard(

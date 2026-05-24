@@ -116,7 +116,14 @@ Contoh owner:
 1. Buat akun dan cloud di Cloudinary.
 2. Buka **Settings > Upload**.
 3. Buat **unsigned upload preset** untuk upload dari aplikasi mobile.
-4. Jalankan aplikasi dengan konfigurasi:
+4. Aplikasi sudah memakai default Cloudinary:
+
+```text
+CLOUDINARY_CLOUD_NAME=dop6ml3pj
+CLOUDINARY_UPLOAD_PRESET=bakulan_unsigned
+```
+
+Kalau ingin mengganti cloud atau preset, jalankan aplikasi dengan konfigurasi:
 
 ```bash
 flutter run --dart-define=CLOUDINARY_CLOUD_NAME=nama_cloud --dart-define=CLOUDINARY_UPLOAD_PRESET=nama_upload_preset

@@ -14,9 +14,13 @@ class CloudinaryConfigException implements Exception {
 
 class CloudinaryService {
   CloudinaryService({
-    String cloudName = const String.fromEnvironment('CLOUDINARY_CLOUD_NAME'),
+    String cloudName = const String.fromEnvironment(
+      'CLOUDINARY_CLOUD_NAME',
+      defaultValue: 'dop6ml3pj',
+    ),
     String uploadPreset = const String.fromEnvironment(
       'CLOUDINARY_UPLOAD_PRESET',
+      defaultValue: 'bakulan_unsigned',
     ),
     http.Client? client,
   }) : _cloudName = cloudName,
