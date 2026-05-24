@@ -52,78 +52,45 @@ class _LoginScreenState extends State<LoginScreen> {
     final compact = MediaQuery.sizeOf(context).height < 720;
 
     return Scaffold(
-      body: Stack(
-        children: [
-          DecoratedBox(
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topCenter,
-                end: Alignment.bottomCenter,
-                colors: [
-                  const Color(0xFF071E2E),
-                  Color.lerp(scheme.primary, Colors.black, .38)!,
-                  scheme.surface,
-                ],
-                stops: const [0, .46, 1],
-              ),
-            ),
-            child: const SizedBox.expand(),
-          ),
-          Positioned.fill(
-            child: DecoratedBox(
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                  colors: [
-                    Colors.white.withValues(alpha: .08),
-                    Colors.transparent,
-                    scheme.primary.withValues(alpha: .12),
+      backgroundColor: scheme.surface,
+      body: SafeArea(
+        child: Center(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.fromLTRB(20, 18, 20, 24),
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 430),
+              child: TweenAnimationBuilder<double>(
+                duration: const Duration(milliseconds: 520),
+                curve: Curves.easeOutCubic,
+                tween: Tween(begin: 0, end: 1),
+                builder: (context, value, child) {
+                  return Opacity(
+                    opacity: value,
+                    child: Transform.translate(
+                      offset: Offset(0, 18 * (1 - value)),
+                      child: child,
+                    ),
+                  );
+                },
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    _BrandPanel(compact: compact),
+                    const SizedBox(height: 16),
+                    _LoginFormCard(
+                      formKey: _formKey,
+                      usernameController: _usernameController,
+                      passwordController: _passwordController,
+                      onLogin: _login,
+                    ),
+                    const SizedBox(height: 14),
+                    _LoginHint(scheme: scheme),
                   ],
                 ),
               ),
             ),
           ),
-          SafeArea(
-            child: Center(
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.fromLTRB(20, 18, 20, 24),
-                child: ConstrainedBox(
-                  constraints: const BoxConstraints(maxWidth: 430),
-                  child: TweenAnimationBuilder<double>(
-                    duration: const Duration(milliseconds: 620),
-                    curve: Curves.easeOutCubic,
-                    tween: Tween(begin: 0, end: 1),
-                    builder: (context, value, child) {
-                      return Opacity(
-                        opacity: value,
-                        child: Transform.translate(
-                          offset: Offset(0, 24 * (1 - value)),
-                          child: child,
-                        ),
-                      );
-                    },
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [
-                        _BrandPanel(compact: compact),
-                        const SizedBox(height: 16),
-                        _LoginFormCard(
-                          formKey: _formKey,
-                          usernameController: _usernameController,
-                          passwordController: _passwordController,
-                          onLogin: _login,
-                        ),
-                        const SizedBox(height: 14),
-                        _LoginHint(scheme: scheme),
-                      ],
-                    ),
-                  ),
-                ),
-              ),
-            ),
-          ),
-        ],
+        ),
       ),
     );
   }
@@ -136,53 +103,61 @@ class _BrandPanel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+
     return Container(
       padding: EdgeInsets.fromLTRB(
         22,
-        compact ? 18 : 24,
+        compact ? 18 : 22,
         22,
-        compact ? 20 : 26,
+        compact ? 18 : 22,
       ),
       decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: .08),
-        borderRadius: BorderRadius.circular(30),
-        border: Border.all(color: Colors.white.withValues(alpha: .14)),
+        color: scheme.surfaceContainerLowest,
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: scheme.outlineVariant.withValues(alpha: .42)),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: .22),
-            offset: const Offset(0, 24),
-            blurRadius: 42,
+            color: scheme.shadow.withValues(alpha: .08),
+            offset: const Offset(0, 12),
+            blurRadius: 26,
           ),
         ],
       ),
       child: Column(
         children: [
           Container(
-            width: compact ? 142 : 174,
-            height: compact ? 142 : 174,
-            padding: const EdgeInsets.all(10),
+            width: compact ? 132 : 158,
+            height: compact ? 132 : 158,
+            padding: const EdgeInsets.all(8),
             decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: .94),
-              borderRadius: BorderRadius.circular(28),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withValues(alpha: .28),
-                  offset: const Offset(0, 18),
-                  blurRadius: 34,
-                ),
-              ],
+              color: scheme.surface,
+              borderRadius: BorderRadius.circular(24),
+              border: Border.all(
+                color: scheme.outlineVariant.withValues(alpha: .44),
+              ),
             ),
             child: ClipRRect(
-              borderRadius: BorderRadius.circular(22),
-              child: Image.asset('assets/images/logo.png', fit: BoxFit.contain),
+              borderRadius: BorderRadius.circular(18),
+              child: Image.asset(
+                'assets/images/logo.png',
+                fit: BoxFit.contain,
+                errorBuilder: (context, error, stackTrace) => Center(
+                  child: Icon(
+                    Icons.storefront_rounded,
+                    color: scheme.primary,
+                    size: 58,
+                  ),
+                ),
+              ),
             ),
           ),
-          SizedBox(height: compact ? 16 : 22),
+          SizedBox(height: compact ? 14 : 18),
           Text(
             'Bakulan D. Frozen',
             textAlign: TextAlign.center,
             style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-              color: Colors.white,
+              color: scheme.onSurface,
               fontWeight: FontWeight.w900,
             ),
           ),
@@ -191,7 +166,7 @@ class _BrandPanel extends StatelessWidget {
             'Kasir dan stok frozen food dalam satu aplikasi.',
             textAlign: TextAlign.center,
             style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-              color: Colors.white.withValues(alpha: .78),
+              color: scheme.onSurfaceVariant,
               fontWeight: FontWeight.w600,
             ),
           ),
@@ -243,14 +218,13 @@ class _LoginFormCard extends StatelessWidget {
                   width: 46,
                   height: 46,
                   decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                      colors: [scheme.primary, scheme.tertiary],
-                    ),
+                    color: scheme.primaryContainer,
                     borderRadius: BorderRadius.circular(16),
                   ),
-                  child: Icon(Icons.lock_open_rounded, color: scheme.onPrimary),
+                  child: Icon(
+                    Icons.lock_open_rounded,
+                    color: scheme.onPrimaryContainer,
+                  ),
                 ),
                 const SizedBox(width: 14),
                 Expanded(
