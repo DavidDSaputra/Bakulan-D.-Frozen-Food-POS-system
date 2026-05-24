@@ -8,6 +8,7 @@ import '../models/category.dart';
 import '../models/product.dart';
 import '../providers/product_provider.dart';
 import '../services/cloudinary_service.dart';
+import '../utils/category_helpers.dart';
 import '../utils/snackbar.dart';
 import '../utils/validators.dart';
 import '../widgets/app_button.dart';
@@ -23,12 +24,6 @@ class ProductFormScreen extends StatefulWidget {
 }
 
 class _ProductFormScreenState extends State<ProductFormScreen> {
-  static const _defaultCategories = [
-    ProductCategory(id: 'frozen_food', namaKategori: 'Frozen Food'),
-    ProductCategory(id: 'sembako', namaKategori: 'Sembako'),
-    ProductCategory(id: 'lain_lain', namaKategori: 'Lain-lain'),
-  ];
-
   final _formKey = GlobalKey<FormState>();
   late final TextEditingController _nameController;
   late final TextEditingController _priceController;
@@ -132,14 +127,6 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
     } finally {
       if (mounted) setState(() => _isUploadingImage = false);
     }
-  }
-
-  String _readableCategoryName(String id) {
-    return id
-        .split(RegExp(r'[_\-\s]+'))
-        .where((part) => part.isNotEmpty)
-        .map((part) => '${part[0].toUpperCase()}${part.substring(1)}')
-        .join(' ');
   }
 
   @override
@@ -255,7 +242,7 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
                   StreamBuilder<List<ProductCategory>>(
                     stream: context.read<ProductProvider>().watchCategories(),
                     builder: (context, snapshot) {
-                      final categories = _mergeCategories(
+                      final categories = CategoryHelpers.merge(
                         snapshot.data ?? const [],
                       );
                       final hasSelectedCategory =
@@ -273,7 +260,7 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
                           DropdownMenuItem(
                             value: _selectedCategoryId,
                             child: Text(
-                              _readableCategoryName(_selectedCategoryId!),
+                              CategoryHelpers.readableId(_selectedCategoryId!),
                             ),
                           ),
                       ];
@@ -330,35 +317,6 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
         ),
       ),
     );
-  }
-
-  List<ProductCategory> _mergeCategories(
-    List<ProductCategory> firestoreCategories,
-  ) {
-    final categories = <String, ProductCategory>{};
-    final names = <String>{};
-
-    for (final category in _defaultCategories) {
-      categories[category.id] = category;
-      names.add(_normalizeCategoryName(category.namaKategori));
-    }
-
-    for (final category in firestoreCategories) {
-      final normalizedName = _normalizeCategoryName(category.namaKategori);
-      if (categories.containsKey(category.id) ||
-          names.contains(normalizedName)) {
-        continue;
-      }
-      categories[category.id] = category;
-      names.add(normalizedName);
-    }
-
-    return categories.values.toList()
-      ..sort((a, b) => a.namaKategori.compareTo(b.namaKategori));
-  }
-
-  String _normalizeCategoryName(String value) {
-    return value.trim().replaceAll(RegExp(r'[\s_\-]+'), ' ').toLowerCase();
   }
 }
 

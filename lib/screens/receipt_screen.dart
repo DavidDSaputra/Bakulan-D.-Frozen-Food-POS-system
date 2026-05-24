@@ -1,11 +1,12 @@
 import 'package:flutter/material.dart';
 
 import '../models/sale_item.dart';
+import '../services/receipt_pdf_service.dart';
 import '../utils/formatters.dart';
 import '../utils/snackbar.dart';
 
 class ReceiptScreen extends StatelessWidget {
-  const ReceiptScreen({
+  ReceiptScreen({
     super.key,
     required this.items,
     required this.method,
@@ -15,6 +16,7 @@ class ReceiptScreen extends StatelessWidget {
   final List<SaleItem> items;
   final String method;
   final int paid;
+  final _pdfService = ReceiptPdfService();
 
   int get total => items.fold(0, (sum, item) => sum + item.subtotal);
 
@@ -74,12 +76,25 @@ class ReceiptScreen extends StatelessWidget {
             ),
             const SizedBox(height: 16),
             FilledButton.icon(
-              onPressed: () => showAppSnackBar(
-                context,
-                'Struk sederhana siap dicetak atau ditunjukkan ke pelanggan',
-              ),
-              icon: const Icon(Icons.print_rounded),
-              label: const Text('Cetak Struk'),
+              onPressed: () async {
+                try {
+                  await _pdfService.shareReceipt(
+                    items: items,
+                    method: method,
+                    paid: paid,
+                  );
+                } catch (_) {
+                  if (context.mounted) {
+                    showAppSnackBar(
+                      context,
+                      'Gagal membuat PDF struk',
+                      isError: true,
+                    );
+                  }
+                }
+              },
+              icon: const Icon(Icons.picture_as_pdf_rounded),
+              label: const Text('Share PDF Struk'),
             ),
             const SizedBox(height: 10),
             OutlinedButton.icon(

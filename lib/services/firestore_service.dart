@@ -4,6 +4,7 @@ import '../models/category.dart';
 import '../models/product.dart';
 import '../models/sale_item.dart';
 import '../models/sales_transaction.dart';
+import '../models/stock_movement.dart';
 
 class FirestoreService {
   FirestoreService({FirebaseFirestore? firestore})
@@ -34,6 +35,27 @@ class FirestoreService {
         .snapshots()
         .map(
           (snapshot) => snapshot.docs.map(SalesTransaction.fromDoc).toList(),
+        );
+  }
+
+  Stream<List<StockMovement>> watchRestockMovements() {
+    return _db
+        .collection('barang_masuk')
+        .orderBy('tanggal', descending: true)
+        .snapshots()
+        .map(
+          (snapshot) =>
+              snapshot.docs.map(StockMovement.fromRestockDoc).toList(),
+        );
+  }
+
+  Stream<List<StockMovement>> watchSalesMovements() {
+    return _db
+        .collection('transaksi')
+        .orderBy('tanggal', descending: true)
+        .snapshots()
+        .map(
+          (snapshot) => snapshot.docs.map(StockMovement.fromSalesDoc).toList(),
         );
   }
 
@@ -116,6 +138,7 @@ class FirestoreService {
         final trxRef = _db.collection('transaksi').doc();
         transaction.set(trxRef, {
           'tanggal': FieldValue.serverTimestamp(),
+          'barang_id': item.product.id,
           'nama_barang': item.product.namaBarang,
           'qty': item.qty,
           'total_harga': item.subtotal,

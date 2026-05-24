@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../models/category.dart';
 import '../models/product.dart';
+import '../models/stock_movement.dart';
 import '../services/firestore_service.dart';
 
 class ProductProvider extends ChangeNotifier {
@@ -13,6 +14,12 @@ class ProductProvider extends ChangeNotifier {
   Stream<List<Product>> watchProducts() => service.watchProducts();
 
   Stream<List<ProductCategory>> watchCategories() => service.watchCategories();
+
+  Stream<List<StockMovement>> watchRestockMovements() =>
+      service.watchRestockMovements();
+
+  Stream<List<StockMovement>> watchSalesMovements() =>
+      service.watchSalesMovements();
 
   Future<void> saveProduct(Product product, {required bool isEdit}) async {
     _setLoading(true);

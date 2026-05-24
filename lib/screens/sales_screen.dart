@@ -4,8 +4,10 @@ import 'package:provider/provider.dart';
 import '../models/product.dart';
 import '../providers/cart_provider.dart';
 import '../providers/product_provider.dart';
+import '../utils/category_helpers.dart';
 import '../utils/formatters.dart';
 import '../utils/snackbar.dart';
+import '../widgets/category_filter_bar.dart';
 import '../widgets/empty_state.dart';
 import '../widgets/loading_indicator.dart';
 import '../widgets/product_tile.dart';
@@ -21,6 +23,7 @@ class SalesScreen extends StatefulWidget {
 class _SalesScreenState extends State<SalesScreen> {
   static const _cartBarHeight = 138.0;
   final _searchController = TextEditingController();
+  String? _selectedCategoryId;
 
   @override
   void dispose() {
@@ -63,7 +66,7 @@ class _SalesScreenState extends State<SalesScreen> {
     return Column(
       children: [
         Padding(
-          padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
+          padding: const EdgeInsets.fromLTRB(16, 8, 16, 10),
           child: TextField(
             controller: _searchController,
             onChanged: (_) => setState(() {}),
@@ -73,6 +76,17 @@ class _SalesScreenState extends State<SalesScreen> {
             ),
           ),
         ),
+        StreamBuilder(
+          stream: context.read<ProductProvider>().watchCategories(),
+          builder: (context, snapshot) {
+            return CategoryFilterBar(
+              categories: CategoryHelpers.merge(snapshot.data ?? const []),
+              selectedCategoryId: _selectedCategoryId,
+              onChanged: (value) => setState(() => _selectedCategoryId = value),
+            );
+          },
+        ),
+        const SizedBox(height: 10),
         Expanded(
           child: StreamBuilder<List<Product>>(
             stream: context.read<ProductProvider>().watchProducts(),
@@ -84,6 +98,11 @@ class _SalesScreenState extends State<SalesScreen> {
                   .where(
                     (product) =>
                         product.namaBarang.toLowerCase().contains(query),
+                  )
+                  .where(
+                    (product) =>
+                        _selectedCategoryId == null ||
+                        product.kategoriId == _selectedCategoryId,
                   )
                   .toList();
 

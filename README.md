@@ -18,13 +18,15 @@ Aplikasi mobile Flutter untuk project kampus:
 - Role owner dan petugas/kasir
 - Dashboard statistik
 - Kelola barang: tambah, edit, hapus, cari
+- Filter barang berdasarkan kategori
 - Upload dan tampilkan gambar produk
 - Kelola stok dan update stok
 - Input barang masuk/restock, stok otomatis bertambah
+- Riwayat stok masuk dan keluar untuk owner
 - Input penjualan dengan validasi stok
 - Pembayaran cash, QRIS, transfer
-- Struk sederhana
-- Laporan penjualan
+- Share PDF struk
+- Laporan penjualan harian, mingguan, bulanan dengan grafik
 - Dark mode
 - Bottom navigation
 
@@ -77,6 +79,7 @@ qty
 total_harga
 metode_pembayaran
 id_user
+barang_id
 ```
 
 Collection tambahan `barang_masuk` dipakai untuk riwayat restock.

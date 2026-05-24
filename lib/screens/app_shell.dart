@@ -9,6 +9,7 @@ import 'dashboard_screen.dart';
 import 'products_screen.dart';
 import 'reports_screen.dart';
 import 'sales_screen.dart';
+import 'stock_history_screen.dart';
 import 'stock_screen.dart';
 
 class AppShell extends StatefulWidget {
@@ -142,6 +143,7 @@ class _ShellTab {
 const _ownerTabs = [
   _ShellTab('Dashboard', Icons.dashboard_rounded, DashboardScreen()),
   _ShellTab('Laporan', Icons.receipt_long_rounded, ReportsScreen()),
+  _ShellTab('Stok', Icons.history_rounded, StockHistoryScreen()),
 ];
 
 const _kasirTabs = [

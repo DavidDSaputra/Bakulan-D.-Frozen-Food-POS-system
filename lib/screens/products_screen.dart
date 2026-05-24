@@ -3,7 +3,9 @@ import 'package:provider/provider.dart';
 
 import '../models/product.dart';
 import '../providers/product_provider.dart';
+import '../utils/category_helpers.dart';
 import '../utils/snackbar.dart';
+import '../widgets/category_filter_bar.dart';
 import '../widgets/empty_state.dart';
 import '../widgets/loading_indicator.dart';
 import '../widgets/product_tile.dart';
@@ -18,6 +20,7 @@ class ProductsScreen extends StatefulWidget {
 
 class _ProductsScreenState extends State<ProductsScreen> {
   final _searchController = TextEditingController();
+  String? _selectedCategoryId;
 
   @override
   void dispose() {
@@ -66,69 +69,93 @@ class _ProductsScreenState extends State<ProductsScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: StreamBuilder<List<Product>>(
-        stream: context.read<ProductProvider>().watchProducts(),
-        builder: (context, snapshot) {
-          if (!snapshot.hasData) return const AppLoadingIndicator();
+      body: StreamBuilder(
+        stream: context.read<ProductProvider>().watchCategories(),
+        builder: (context, categorySnapshot) {
+          final categories = CategoryHelpers.merge(
+            categorySnapshot.data ?? const [],
+          );
 
-          final query = _searchController.text.trim().toLowerCase();
-          final products = snapshot.data!
-              .where(
-                (product) => product.namaBarang.toLowerCase().contains(query),
-              )
-              .toList();
+          return StreamBuilder<List<Product>>(
+            stream: context.read<ProductProvider>().watchProducts(),
+            builder: (context, snapshot) {
+              if (!snapshot.hasData) return const AppLoadingIndicator();
 
-          return Column(
-            children: [
-              Padding(
-                padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
-                child: TextField(
-                  controller: _searchController,
-                  onChanged: (_) => setState(() {}),
-                  decoration: const InputDecoration(
-                    hintText: 'Cari barang frozen food',
-                    prefixIcon: Icon(Icons.search_rounded),
-                  ),
-                ),
-              ),
-              Expanded(
-                child: products.isEmpty
-                    ? const EmptyState(
-                        icon: Icons.inventory_2_rounded,
-                        title: 'Barang belum tersedia',
-                        subtitle:
-                            'Tambahkan barang untuk mulai mengelola stok.',
-                      )
-                    : ListView.separated(
-                        padding: const EdgeInsets.fromLTRB(16, 0, 16, 96),
-                        itemBuilder: (context, index) {
-                          final product = products[index];
-                          return ProductTile(
-                            product: product,
-                            onTap: () => _openForm(product),
-                            trailing: PopupMenuButton<String>(
-                              onSelected: (value) {
-                                if (value == 'edit') _openForm(product);
-                                if (value == 'delete') _deleteProduct(product);
-                              },
-                              itemBuilder: (context) => const [
-                                PopupMenuItem(
-                                  value: 'edit',
-                                  child: Text('Edit'),
-                                ),
-                                PopupMenuItem(
-                                  value: 'delete',
-                                  child: Text('Hapus'),
-                                ),
-                              ],
-                            ),
-                          );
-                        },
-                        separatorBuilder: (_, _) => const SizedBox(height: 10),
-                        itemCount: products.length,
+              final query = _searchController.text.trim().toLowerCase();
+              final products = snapshot.data!
+                  .where(
+                    (product) =>
+                        product.namaBarang.toLowerCase().contains(query),
+                  )
+                  .where(
+                    (product) =>
+                        _selectedCategoryId == null ||
+                        product.kategoriId == _selectedCategoryId,
+                  )
+                  .toList();
+
+              return Column(
+                children: [
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 8, 16, 10),
+                    child: TextField(
+                      controller: _searchController,
+                      onChanged: (_) => setState(() {}),
+                      decoration: const InputDecoration(
+                        hintText: 'Cari barang',
+                        prefixIcon: Icon(Icons.search_rounded),
                       ),
-              ),
-            ],
+                    ),
+                  ),
+                  CategoryFilterBar(
+                    categories: categories,
+                    selectedCategoryId: _selectedCategoryId,
+                    onChanged: (value) =>
+                        setState(() => _selectedCategoryId = value),
+                  ),
+                  const SizedBox(height: 10),
+                  Expanded(
+                    child: products.isEmpty
+                        ? const EmptyState(
+                            icon: Icons.inventory_2_rounded,
+                            title: 'Barang tidak ditemukan',
+                            subtitle: 'Coba ubah kata pencarian atau kategori.',
+                          )
+                        : ListView.separated(
+                            padding: const EdgeInsets.fromLTRB(16, 0, 16, 96),
+                            itemBuilder: (context, index) {
+                              final product = products[index];
+                              return ProductTile(
+                                product: product,
+                                onTap: () => _openForm(product),
+                                trailing: PopupMenuButton<String>(
+                                  onSelected: (value) {
+                                    if (value == 'edit') _openForm(product);
+                                    if (value == 'delete') {
+                                      _deleteProduct(product);
+                                    }
+                                  },
+                                  itemBuilder: (context) => const [
+                                    PopupMenuItem(
+                                      value: 'edit',
+                                      child: Text('Edit'),
+                                    ),
+                                    PopupMenuItem(
+                                      value: 'delete',
+                                      child: Text('Hapus'),
+                                    ),
+                                  ],
+                                ),
+                              );
+                            },
+                            separatorBuilder: (_, _) =>
+                                const SizedBox(height: 10),
+                            itemCount: products.length,
+                          ),
+                  ),
+                ],
+              );
+            },
           );
         },
       ),
