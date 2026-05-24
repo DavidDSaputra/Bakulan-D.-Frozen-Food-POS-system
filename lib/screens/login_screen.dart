@@ -107,9 +107,9 @@ class _BrandPanel extends StatelessWidget {
 
     return Container(
       padding: EdgeInsets.fromLTRB(
-        22,
-        compact ? 18 : 22,
-        22,
+        18,
+        compact ? 16 : 18,
+        18,
         compact ? 18 : 22,
       ),
       decoration: BoxDecoration(
@@ -127,21 +127,18 @@ class _BrandPanel extends StatelessWidget {
       child: Column(
         children: [
           Container(
-            width: compact ? 132 : 158,
-            height: compact ? 132 : 158,
-            padding: const EdgeInsets.all(8),
+            width: compact ? 188 : 224,
+            height: compact ? 150 : 178,
+            padding: const EdgeInsets.all(6),
             decoration: BoxDecoration(
               color: scheme.surface,
-              borderRadius: BorderRadius.circular(24),
-              border: Border.all(
-                color: scheme.outlineVariant.withValues(alpha: .44),
-              ),
+              borderRadius: BorderRadius.circular(22),
             ),
             child: ClipRRect(
               borderRadius: BorderRadius.circular(18),
               child: Image.asset(
                 'assets/images/logo.png',
-                fit: BoxFit.contain,
+                fit: BoxFit.cover,
                 errorBuilder: (context, error, stackTrace) => Center(
                   child: Icon(
                     Icons.storefront_rounded,
@@ -152,7 +149,7 @@ class _BrandPanel extends StatelessWidget {
               ),
             ),
           ),
-          SizedBox(height: compact ? 14 : 18),
+          SizedBox(height: compact ? 12 : 16),
           Text(
             'Bakulan D. Frozen',
             textAlign: TextAlign.center,

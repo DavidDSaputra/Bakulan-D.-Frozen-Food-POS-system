@@ -1,14 +1,14 @@
 import 'package:flutter/material.dart';
 
 class AppTheme {
-  static const _seed = Color(0xFF0F9F8F);
-  static const _darkSeed = Color(0xFF60E0D0);
+  static const _seed = Color(0xFF1565C0);
+  static const _darkSeed = Color(0xFF8AB4F8);
 
   static ThemeData get light {
     final scheme = ColorScheme.fromSeed(
       seedColor: _seed,
       brightness: Brightness.light,
-      surface: const Color(0xFFF6F8F7),
+      surface: const Color(0xFFF6F8FC),
     );
     return _base(scheme);
   }
@@ -17,7 +17,7 @@ class AppTheme {
     final scheme = ColorScheme.fromSeed(
       seedColor: _darkSeed,
       brightness: Brightness.dark,
-      surface: const Color(0xFF101413),
+      surface: const Color(0xFF101318),
     );
     return _base(scheme);
   }
