@@ -19,6 +19,7 @@ class SalesScreen extends StatefulWidget {
 }
 
 class _SalesScreenState extends State<SalesScreen> {
+  static const _cartBarHeight = 138.0;
   final _searchController = TextEditingController();
 
   @override
@@ -30,12 +31,17 @@ class _SalesScreenState extends State<SalesScreen> {
   void _addToCart(Product product) {
     try {
       context.read<CartProvider>().addProduct(product);
-      showAppSnackBar(context, '${product.namaBarang} ditambahkan');
+      showAppSnackBar(
+        context,
+        '${product.namaBarang} ditambahkan',
+        bottomMargin: _cartBarHeight + 18,
+      );
     } catch (error) {
       showAppSnackBar(
         context,
         error.toString().replaceAll('Exception: ', ''),
         isError: true,
+        bottomMargin: _cartBarHeight + 18,
       );
     }
   }
@@ -113,15 +119,23 @@ class _SalesScreenState extends State<SalesScreen> {
         ),
         Consumer<CartProvider>(
           builder: (context, cart, _) {
+            final scheme = Theme.of(context).colorScheme;
             return SafeArea(
               top: false,
               child: Container(
-                padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
+                padding: const EdgeInsets.fromLTRB(16, 14, 16, 16),
                 decoration: BoxDecoration(
-                  color: Theme.of(context).colorScheme.surface,
+                  color: scheme.surfaceContainerLowest,
+                  boxShadow: [
+                    BoxShadow(
+                      color: scheme.shadow.withValues(alpha: .08),
+                      offset: const Offset(0, -12),
+                      blurRadius: 24,
+                    ),
+                  ],
                   border: Border(
                     top: BorderSide(
-                      color: Theme.of(context).colorScheme.outlineVariant,
+                      color: scheme.outlineVariant.withValues(alpha: .48),
                     ),
                   ),
                 ),
@@ -144,10 +158,14 @@ class _SalesScreenState extends State<SalesScreen> {
                       ],
                     ),
                     const SizedBox(height: 10),
-                    FilledButton.icon(
-                      onPressed: cart.isEmpty ? null : _goToPayment,
-                      icon: const Icon(Icons.payments_rounded),
-                      label: const Text('Lanjut Pembayaran'),
+                    SizedBox(
+                      height: 54,
+                      width: double.infinity,
+                      child: FilledButton.icon(
+                        onPressed: cart.isEmpty ? null : _goToPayment,
+                        icon: const Icon(Icons.payments_rounded),
+                        label: const Text('Lanjut Pembayaran'),
+                      ),
                     ),
                   ],
                 ),
