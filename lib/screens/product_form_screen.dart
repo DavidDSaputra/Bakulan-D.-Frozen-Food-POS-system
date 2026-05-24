@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
 
+import '../models/category.dart';
 import '../models/product.dart';
 import '../providers/product_provider.dart';
 import '../services/cloudinary_service.dart';
@@ -26,11 +27,11 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
   late final TextEditingController _nameController;
   late final TextEditingController _priceController;
   late final TextEditingController _stockController;
-  late final TextEditingController _categoryController;
   late final TextEditingController _imageUrlController;
   final _imagePicker = ImagePicker();
   final _cloudinaryService = CloudinaryService();
   Uint8List? _previewImageBytes;
+  String? _selectedCategoryId;
   bool _isUploadingImage = false;
 
   bool get _isEdit => widget.product != null;
@@ -46,9 +47,9 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
     _stockController = TextEditingController(
       text: product == null ? '' : product.stok.toString(),
     );
-    _categoryController = TextEditingController(
-      text: product?.kategoriId ?? '',
-    );
+    _selectedCategoryId = product?.kategoriId.isEmpty == true
+        ? null
+        : product?.kategoriId;
     _imageUrlController = TextEditingController(text: product?.imageUrl ?? '');
   }
 
@@ -57,7 +58,6 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
     _nameController.dispose();
     _priceController.dispose();
     _stockController.dispose();
-    _categoryController.dispose();
     _imageUrlController.dispose();
     super.dispose();
   }
@@ -70,7 +70,7 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
       namaBarang: _nameController.text.trim(),
       harga: int.parse(_priceController.text.trim()),
       stok: int.parse(_stockController.text.trim()),
-      kategoriId: _categoryController.text.trim(),
+      kategoriId: _selectedCategoryId ?? '',
       imageUrl: _imageUrlController.text.trim(),
     );
 
@@ -126,6 +126,14 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
     } finally {
       if (mounted) setState(() => _isUploadingImage = false);
     }
+  }
+
+  String _readableCategoryName(String id) {
+    return id
+        .split(RegExp(r'[_\-\s]+'))
+        .where((part) => part.isNotEmpty)
+        .map((part) => '${part[0].toUpperCase()}${part.substring(1)}')
+        .join(' ');
   }
 
   @override
@@ -238,13 +246,54 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
                     textInputAction: TextInputAction.next,
                   ),
                   const SizedBox(height: 14),
-                  AppTextField(
-                    controller: _categoryController,
-                    label: 'Kategori ID',
-                    icon: Icons.category_rounded,
-                    validator: (value) =>
-                        Validators.requiredText(value, field: 'Kategori ID'),
-                    textInputAction: TextInputAction.done,
+                  StreamBuilder<List<ProductCategory>>(
+                    stream: context.read<ProductProvider>().watchCategories(),
+                    builder: (context, snapshot) {
+                      final categories = snapshot.data ?? const [];
+                      final hasSelectedCategory =
+                          _selectedCategoryId != null &&
+                          categories.any(
+                            (category) => category.id == _selectedCategoryId,
+                          );
+                      final items = [
+                        for (final category in categories)
+                          DropdownMenuItem(
+                            value: category.id,
+                            child: Text(category.namaKategori),
+                          ),
+                        if (_selectedCategoryId != null && !hasSelectedCategory)
+                          DropdownMenuItem(
+                            value: _selectedCategoryId,
+                            child: Text(
+                              _readableCategoryName(_selectedCategoryId!),
+                            ),
+                          ),
+                      ];
+
+                      return DropdownButtonFormField<String>(
+                        initialValue: _selectedCategoryId,
+                        items: items,
+                        isExpanded: true,
+                        icon: const Icon(Icons.keyboard_arrow_down_rounded),
+                        decoration: const InputDecoration(
+                          labelText: 'Kategori',
+                          prefixIcon: Icon(Icons.category_rounded),
+                        ),
+                        hint: Text(
+                          snapshot.connectionState == ConnectionState.waiting
+                              ? 'Memuat kategori...'
+                              : 'Pilih kategori barang',
+                        ),
+                        validator: (value) => value == null || value.isEmpty
+                            ? 'Kategori wajib dipilih'
+                            : null,
+                        onChanged: items.isEmpty
+                            ? null
+                            : (value) {
+                                setState(() => _selectedCategoryId = value);
+                              },
+                      );
+                    },
                   ),
                   const SizedBox(height: 14),
                   AppTextField(

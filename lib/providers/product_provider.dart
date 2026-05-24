@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../models/category.dart';
 import '../models/product.dart';
 import '../services/firestore_service.dart';
 
@@ -10,6 +11,8 @@ class ProductProvider extends ChangeNotifier {
   bool get isLoading => _isLoading;
 
   Stream<List<Product>> watchProducts() => service.watchProducts();
+
+  Stream<List<ProductCategory>> watchCategories() => service.watchCategories();
 
   Future<void> saveProduct(Product product, {required bool isEdit}) async {
     _setLoading(true);
