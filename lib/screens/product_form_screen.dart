@@ -23,6 +23,12 @@ class ProductFormScreen extends StatefulWidget {
 }
 
 class _ProductFormScreenState extends State<ProductFormScreen> {
+  static const _defaultCategories = [
+    ProductCategory(id: 'frozen_food', namaKategori: 'Frozen Food'),
+    ProductCategory(id: 'sembako', namaKategori: 'Sembako'),
+    ProductCategory(id: 'lain_lain', namaKategori: 'Lain-lain'),
+  ];
+
   final _formKey = GlobalKey<FormState>();
   late final TextEditingController _nameController;
   late final TextEditingController _priceController;
@@ -249,7 +255,9 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
                   StreamBuilder<List<ProductCategory>>(
                     stream: context.read<ProductProvider>().watchCategories(),
                     builder: (context, snapshot) {
-                      final categories = snapshot.data ?? const [];
+                      final categories = _mergeCategories(
+                        snapshot.data ?? const [],
+                      );
                       final hasSelectedCategory =
                           _selectedCategoryId != null &&
                           categories.any(
@@ -322,6 +330,17 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
         ),
       ),
     );
+  }
+
+  List<ProductCategory> _mergeCategories(
+    List<ProductCategory> firestoreCategories,
+  ) {
+    final categories = <String, ProductCategory>{
+      for (final category in _defaultCategories) category.id: category,
+      for (final category in firestoreCategories) category.id: category,
+    };
+    return categories.values.toList()
+      ..sort((a, b) => a.namaKategori.compareTo(b.namaKategori));
   }
 }
 

@@ -48,6 +48,14 @@ id
 nama_kategori
 ```
 
+Contoh kategori:
+
+```text
+frozen_food -> Frozen Food
+sembako -> Sembako
+lain_lain -> Lain-lain
+```
+
 Collection `barang`
 
 ```text
