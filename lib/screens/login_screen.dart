@@ -127,18 +127,18 @@ class _BrandPanel extends StatelessWidget {
       child: Column(
         children: [
           Container(
-            width: compact ? 188 : 224,
-            height: compact ? 150 : 178,
-            padding: const EdgeInsets.all(6),
+            width: compact ? 218 : 268,
+            height: compact ? 218 : 268,
+            padding: const EdgeInsets.all(10),
             decoration: BoxDecoration(
               color: scheme.surface,
-              borderRadius: BorderRadius.circular(22),
+              borderRadius: BorderRadius.circular(24),
             ),
             child: ClipRRect(
-              borderRadius: BorderRadius.circular(18),
+              borderRadius: BorderRadius.circular(20),
               child: Image.asset(
-                'assets/images/logo.png',
-                fit: BoxFit.cover,
+                'assets/images/logo.jpeg',
+                fit: BoxFit.contain,
                 errorBuilder: (context, error, stackTrace) => Center(
                   child: Icon(
                     Icons.storefront_rounded,
@@ -149,16 +149,7 @@ class _BrandPanel extends StatelessWidget {
               ),
             ),
           ),
-          SizedBox(height: compact ? 12 : 16),
-          Text(
-            'Bakulan D. Frozen',
-            textAlign: TextAlign.center,
-            style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-              color: scheme.onSurface,
-              fontWeight: FontWeight.w900,
-            ),
-          ),
-          const SizedBox(height: 8),
+          SizedBox(height: compact ? 10 : 14),
           Text(
             'Kasir dan stok frozen food dalam satu aplikasi.',
             textAlign: TextAlign.center,
