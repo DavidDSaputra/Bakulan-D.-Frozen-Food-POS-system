@@ -2,17 +2,14 @@ import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
-import '../models/report_period.dart';
 import '../models/sales_transaction.dart';
 import '../providers/sales_provider.dart';
-import '../services/report_export_service.dart';
 import '../utils/formatters.dart';
-import '../utils/snackbar.dart';
 import '../widgets/empty_state.dart';
 import '../widgets/loading_indicator.dart';
 import '../widgets/stat_card.dart';
 
-export '../models/report_period.dart';
+enum ReportPeriod { daily, weekly, monthly }
 
 class ReportsScreen extends StatefulWidget {
   const ReportsScreen({super.key});
@@ -23,38 +20,6 @@ class ReportsScreen extends StatefulWidget {
 
 class _ReportsScreenState extends State<ReportsScreen> {
   ReportPeriod _period = ReportPeriod.daily;
-  String? _exportingType; // 'pdf' | 'excel' | null
-  final _exportService = ReportExportService();
-
-  Future<void> _exportPdf(List<SalesTransaction> transactions) async {
-    setState(() => _exportingType = 'pdf');
-    try {
-      await _exportService.exportPdf(
-        transactions: transactions,
-        period: _period,
-      );
-    } catch (e) {
-      if (mounted) showAppSnackBar(context, 'Gagal ekspor PDF', isError: true);
-    } finally {
-      if (mounted) setState(() => _exportingType = null);
-    }
-  }
-
-  Future<void> _exportExcel(List<SalesTransaction> transactions) async {
-    setState(() => _exportingType = 'excel');
-    try {
-      await _exportService.exportExcel(
-        transactions: transactions,
-        period: _period,
-      );
-    } catch (e) {
-      if (mounted) {
-        showAppSnackBar(context, 'Gagal ekspor Excel', isError: true);
-      }
-    } finally {
-      if (mounted) setState(() => _exportingType = null);
-    }
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -106,18 +71,6 @@ class _ReportsScreenState extends State<ReportsScreen> {
               selected: {_period},
               onSelectionChanged: (value) =>
                   setState(() => _period = value.first),
-            ),
-            const SizedBox(height: 10),
-            _ExportButtonRow(
-              isExportingPdf: _exportingType == 'pdf',
-              isExportingExcel: _exportingType == 'excel',
-              disabled: _exportingType != null,
-              onExportPdf: filteredTransactions.isEmpty
-                  ? null
-                  : () => _exportPdf(filteredTransactions),
-              onExportExcel: filteredTransactions.isEmpty
-                  ? null
-                  : () => _exportExcel(filteredTransactions),
             ),
             const SizedBox(height: 14),
             GridView(
@@ -288,61 +241,6 @@ class _ReportsScreenState extends State<ReportsScreen> {
     };
   }
 }
-
-// ── Export button row ─────────────────────────────────────────────────────────
-
-class _ExportButtonRow extends StatelessWidget {
-  const _ExportButtonRow({
-    required this.isExportingPdf,
-    required this.isExportingExcel,
-    required this.disabled,
-    required this.onExportPdf,
-    required this.onExportExcel,
-  });
-
-  final bool isExportingPdf;
-  final bool isExportingExcel;
-  final bool disabled;
-  final VoidCallback? onExportPdf;
-  final VoidCallback? onExportExcel;
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      children: [
-        Expanded(
-          child: OutlinedButton.icon(
-            onPressed: (disabled || onExportPdf == null) ? null : onExportPdf,
-            icon: isExportingPdf
-                ? const SizedBox.square(
-                    dimension: 16,
-                    child: CircularProgressIndicator(strokeWidth: 2),
-                  )
-                : const Icon(Icons.picture_as_pdf_rounded, size: 18),
-            label: Text(isExportingPdf ? 'Mengekspor...' : 'Export PDF'),
-          ),
-        ),
-        const SizedBox(width: 10),
-        Expanded(
-          child: OutlinedButton.icon(
-            onPressed: (disabled || onExportExcel == null)
-                ? null
-                : onExportExcel,
-            icon: isExportingExcel
-                ? const SizedBox.square(
-                    dimension: 16,
-                    child: CircularProgressIndicator(strokeWidth: 2),
-                  )
-                : const Icon(Icons.table_chart_rounded, size: 18),
-            label: Text(isExportingExcel ? 'Mengekspor...' : 'Export Excel'),
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-// ── Chart helpers ─────────────────────────────────────────────────────────────
 
 class _ChartPoint {
   const _ChartPoint({required this.label, required this.value});
