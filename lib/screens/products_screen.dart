@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../models/product.dart';
+import '../providers/auth_provider.dart';
 import '../providers/product_provider.dart';
 import '../utils/category_helpers.dart';
 import '../utils/snackbar.dart';
@@ -9,6 +10,7 @@ import '../widgets/category_filter_bar.dart';
 import '../widgets/empty_state.dart';
 import '../widgets/loading_indicator.dart';
 import '../widgets/product_tile.dart';
+import 'product_detail_screen.dart';
 import 'product_form_screen.dart';
 
 class ProductsScreen extends StatefulWidget {
@@ -66,8 +68,17 @@ class _ProductsScreenState extends State<ProductsScreen> {
     );
   }
 
+  void _openDetail(Product product) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => ProductDetailScreen(product: product)),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
+    final isOwner = context.watch<AuthProvider>().user?.isOwner == true;
+
     return Scaffold(
       body: StreamBuilder(
         stream: context.read<ProductProvider>().watchCategories(),
@@ -127,25 +138,29 @@ class _ProductsScreenState extends State<ProductsScreen> {
                               final product = products[index];
                               return ProductTile(
                                 product: product,
-                                onTap: () => _openForm(product),
-                                trailing: PopupMenuButton<String>(
-                                  onSelected: (value) {
-                                    if (value == 'edit') _openForm(product);
-                                    if (value == 'delete') {
-                                      _deleteProduct(product);
-                                    }
-                                  },
-                                  itemBuilder: (context) => const [
-                                    PopupMenuItem(
-                                      value: 'edit',
-                                      child: Text('Edit'),
-                                    ),
-                                    PopupMenuItem(
-                                      value: 'delete',
-                                      child: Text('Hapus'),
-                                    ),
-                                  ],
-                                ),
+                                onTap: () => _openDetail(product),
+                                trailing: isOwner
+                                    ? PopupMenuButton<String>(
+                                        onSelected: (value) {
+                                          if (value == 'edit') {
+                                            _openForm(product);
+                                          }
+                                          if (value == 'delete') {
+                                            _deleteProduct(product);
+                                          }
+                                        },
+                                        itemBuilder: (context) => const [
+                                          PopupMenuItem(
+                                            value: 'edit',
+                                            child: Text('Edit'),
+                                          ),
+                                          PopupMenuItem(
+                                            value: 'delete',
+                                            child: Text('Hapus'),
+                                          ),
+                                        ],
+                                      )
+                                    : const Icon(Icons.lock_outline_rounded),
                               );
                             },
                             separatorBuilder: (_, _) =>
@@ -159,11 +174,13 @@ class _ProductsScreenState extends State<ProductsScreen> {
           );
         },
       ),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: () => _openForm(),
-        icon: const Icon(Icons.add_rounded),
-        label: const Text('Tambah'),
-      ),
+      floatingActionButton: isOwner
+          ? FloatingActionButton.extended(
+              onPressed: () => _openForm(),
+              icon: const Icon(Icons.add_rounded),
+              label: const Text('Tambah'),
+            )
+          : null,
     );
   }
 }

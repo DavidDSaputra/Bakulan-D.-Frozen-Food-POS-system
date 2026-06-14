@@ -23,6 +23,7 @@ class ProductTile extends StatelessWidget {
         : product.isLowStock
         ? const Color(0xFFE69A26)
         : scheme.primary;
+    final statusColor = product.isActive ? stockColor : scheme.outline;
     final hasImage = product.imageUrl.trim().isNotEmpty;
 
     return Container(
@@ -50,17 +51,26 @@ class ProductTile extends StatelessWidget {
                 height: 58,
                 clipBehavior: Clip.antiAlias,
                 decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                    colors: [scheme.primaryContainer, scheme.tertiaryContainer],
-                  ),
+                  color: scheme.primaryContainer,
                   borderRadius: BorderRadius.circular(16),
                 ),
                 child: hasImage
                     ? Image.network(
                         product.imageUrl,
                         fit: BoxFit.cover,
+                        filterQuality: FilterQuality.low,
+                        gaplessPlayback: true,
+                        loadingBuilder: (context, child, loadingProgress) {
+                          if (loadingProgress == null) return child;
+                          return Center(
+                            child: CircularProgressIndicator(
+                              strokeWidth: 1.5,
+                              valueColor: AlwaysStoppedAnimation(
+                                scheme.primary.withValues(alpha: .5),
+                              ),
+                            ),
+                          );
+                        },
                         errorBuilder: (context, error, stackTrace) => Icon(
                           Icons.broken_image_rounded,
                           color: scheme.primary,
@@ -83,29 +93,54 @@ class ProductTile extends StatelessWidget {
                     ),
                     const SizedBox(height: 5),
                     Text(
-                      AppFormatters.rupiah(product.harga),
+                      AppFormatters.rupiah(product.hargaJual),
                       style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                         color: scheme.onSurfaceVariant,
                       ),
                     ),
                     const SizedBox(height: 8),
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 10,
-                        vertical: 5,
-                      ),
-                      decoration: BoxDecoration(
-                        color: stockColor.withValues(alpha: .12),
-                        borderRadius: BorderRadius.circular(999),
-                      ),
-                      child: Text(
-                        'Stok ${product.stok}',
-                        style: TextStyle(
-                          color: stockColor,
-                          fontSize: 12,
-                          fontWeight: FontWeight.w800,
+                    Wrap(
+                      spacing: 6,
+                      runSpacing: 6,
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 10,
+                            vertical: 5,
+                          ),
+                          decoration: BoxDecoration(
+                            color: stockColor.withValues(alpha: .12),
+                            borderRadius: BorderRadius.circular(999),
+                          ),
+                          child: Text(
+                            'Stok ${product.stok}',
+                            style: TextStyle(
+                              color: stockColor,
+                              fontSize: 12,
+                              fontWeight: FontWeight.w800,
+                            ),
+                          ),
                         ),
-                      ),
+                        if (!product.isActive)
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 10,
+                              vertical: 5,
+                            ),
+                            decoration: BoxDecoration(
+                              color: statusColor.withValues(alpha: .12),
+                              borderRadius: BorderRadius.circular(999),
+                            ),
+                            child: Text(
+                              'Off',
+                              style: TextStyle(
+                                color: statusColor,
+                                fontSize: 12,
+                                fontWeight: FontWeight.w800,
+                              ),
+                            ),
+                          ),
+                      ],
                     ),
                   ],
                 ),

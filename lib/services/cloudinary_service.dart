@@ -35,6 +35,40 @@ class CloudinaryService {
     required Uint8List bytes,
     required String fileName,
   }) async {
+    return _uploadImage(
+      bytes: bytes,
+      fileName: fileName,
+      folder: 'bakulan-products',
+    );
+  }
+
+  Future<String> uploadPaymentProof({
+    required Uint8List bytes,
+    required String fileName,
+  }) async {
+    return _uploadImage(
+      bytes: bytes,
+      fileName: fileName,
+      folder: 'bakulan-payment-proofs',
+    );
+  }
+
+  Future<String> uploadOpnameProof({
+    required Uint8List bytes,
+    required String fileName,
+  }) async {
+    return _uploadImage(
+      bytes: bytes,
+      fileName: fileName,
+      folder: 'bakulan-opname-proofs',
+    );
+  }
+
+  Future<String> _uploadImage({
+    required Uint8List bytes,
+    required String fileName,
+    required String folder,
+  }) async {
     if (_cloudName.isEmpty || _uploadPreset.isEmpty) {
       throw const CloudinaryConfigException(
         'Cloudinary belum dikonfigurasi. Jalankan app dengan --dart-define CLOUDINARY_CLOUD_NAME dan CLOUDINARY_UPLOAD_PRESET.',
@@ -47,7 +81,7 @@ class CloudinaryService {
             Uri.https('api.cloudinary.com', '/v1_1/$_cloudName/image/upload'),
           )
           ..fields['upload_preset'] = _uploadPreset
-          ..fields['folder'] = 'bakulan-products'
+          ..fields['folder'] = folder
           ..files.add(
             http.MultipartFile.fromBytes('file', bytes, filename: fileName),
           );

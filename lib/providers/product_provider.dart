@@ -13,6 +13,8 @@ class ProductProvider extends ChangeNotifier {
 
   Stream<List<Product>> watchProducts() => service.watchProducts();
 
+  Stream<List<Product>> watchActiveProducts() => service.watchActiveProducts();
+
   Stream<List<ProductCategory>> watchCategories() => service.watchCategories();
 
   Stream<List<StockMovement>> watchRestockMovements() =>
@@ -20,6 +22,9 @@ class ProductProvider extends ChangeNotifier {
 
   Stream<List<StockMovement>> watchSalesMovements() =>
       service.watchSalesMovements();
+
+  Stream<List<StockMovement>> watchOpnameMovements() =>
+      service.watchOpnameMovements();
 
   Future<void> saveProduct(Product product, {required bool isEdit}) async {
     _setLoading(true);
@@ -47,6 +52,46 @@ class ProductProvider extends ChangeNotifier {
     _setLoading(true);
     try {
       await service.updateStock(productId: productId, stock: stock);
+    } finally {
+      _setLoading(false);
+    }
+  }
+
+  Future<void> addStock(Product product, int qty, String userId) async {
+    _setLoading(true);
+    try {
+      await service.addStock(product: product, qty: qty, userId: userId);
+    } finally {
+      _setLoading(false);
+    }
+  }
+
+  Future<void> reduceStockForOpname(
+    Product product,
+    int qty,
+    String note,
+    String userId,
+  ) async {
+    _setLoading(true);
+    try {
+      await service.reduceStockForOpname(
+        product: product,
+        qty: qty,
+        note: note,
+        userId: userId,
+      );
+    } finally {
+      _setLoading(false);
+    }
+  }
+
+  Future<void> updateProductActive(String productId, bool isActive) async {
+    _setLoading(true);
+    try {
+      await service.updateProductActive(
+        productId: productId,
+        isActive: isActive,
+      );
     } finally {
       _setLoading(false);
     }

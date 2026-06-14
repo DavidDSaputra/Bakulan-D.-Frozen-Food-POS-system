@@ -18,67 +18,81 @@ class StockHistoryScreen extends StatelessWidget {
         return StreamBuilder<List<StockMovement>>(
           stream: context.read<ProductProvider>().watchSalesMovements(),
           builder: (context, salesSnapshot) {
-            if (!restockSnapshot.hasData || !salesSnapshot.hasData) {
-              return const AppLoadingIndicator();
-            }
+            return StreamBuilder<List<StockMovement>>(
+              stream: context.read<ProductProvider>().watchOpnameMovements(),
+              builder: (context, opnameSnapshot) {
+                if (!restockSnapshot.hasData ||
+                    !salesSnapshot.hasData ||
+                    !opnameSnapshot.hasData) {
+                  return const AppLoadingIndicator();
+                }
 
-            final movements = [...restockSnapshot.data!, ...salesSnapshot.data!]
-              ..sort((a, b) => b.tanggal.compareTo(a.tanggal));
+                final movements = [
+                  ...restockSnapshot.data!,
+                  ...salesSnapshot.data!,
+                  ...opnameSnapshot.data!,
+                ]..sort((a, b) => b.tanggal.compareTo(a.tanggal));
 
-            final totalMasuk = movements
-                .where((movement) => movement.type == StockMovementType.masuk)
-                .fold<int>(0, (sum, movement) => sum + movement.qty);
-            final totalKeluar = movements
-                .where((movement) => movement.type == StockMovementType.keluar)
-                .fold<int>(0, (sum, movement) => sum + movement.qty);
+                final totalMasuk = movements
+                    .where(
+                      (movement) => movement.type == StockMovementType.masuk,
+                    )
+                    .fold<int>(0, (sum, movement) => sum + movement.qty);
+                final totalKeluar = movements
+                    .where(
+                      (movement) => movement.type == StockMovementType.keluar,
+                    )
+                    .fold<int>(0, (sum, movement) => sum + movement.qty);
 
-            if (movements.isEmpty) {
-              return const EmptyState(
-                icon: Icons.history_rounded,
-                title: 'Riwayat stok kosong',
-                subtitle:
-                    'Barang masuk dan penjualan akan muncul di halaman ini.',
-              );
-            }
+                if (movements.isEmpty) {
+                  return const EmptyState(
+                    icon: Icons.history_rounded,
+                    title: 'Riwayat stok kosong',
+                    subtitle:
+                        'Barang masuk, penjualan, dan opname akan muncul di halaman ini.',
+                  );
+                }
 
-            return ListView(
-              padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
-              children: [
-                Row(
+                return ListView(
+                  padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
                   children: [
-                    Expanded(
-                      child: _SummaryTile(
-                        label: 'Masuk',
-                        value: '$totalMasuk item',
-                        icon: Icons.call_received_rounded,
-                        color: const Color(0xFF1565C0),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: _SummaryTile(
+                            label: 'Masuk',
+                            value: '$totalMasuk item',
+                            icon: Icons.call_received_rounded,
+                            color: const Color(0xFF27AE60),
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: _SummaryTile(
+                            label: 'Keluar',
+                            value: '$totalKeluar item',
+                            icon: Icons.call_made_rounded,
+                            color: const Color(0xFFD95B5B),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 18),
+                    Text(
+                      'Riwayat Stok',
+                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.w900,
                       ),
                     ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: _SummaryTile(
-                        label: 'Keluar',
-                        value: '$totalKeluar item',
-                        icon: Icons.call_made_rounded,
-                        color: const Color(0xFFD95B5B),
+                    const SizedBox(height: 12),
+                    for (final movement in movements)
+                      Padding(
+                        padding: const EdgeInsets.only(bottom: 10),
+                        child: _MovementTile(movement: movement),
                       ),
-                    ),
                   ],
-                ),
-                const SizedBox(height: 18),
-                Text(
-                  'Riwayat Stok',
-                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.w900,
-                  ),
-                ),
-                const SizedBox(height: 12),
-                for (final movement in movements)
-                  Padding(
-                    padding: const EdgeInsets.only(bottom: 10),
-                    child: _MovementTile(movement: movement),
-                  ),
-              ],
+                );
+              },
             );
           },
         );
@@ -138,6 +152,12 @@ class _MovementTile extends StatelessWidget {
     final scheme = Theme.of(context).colorScheme;
     final isIn = movement.type == StockMovementType.masuk;
     final color = isIn ? scheme.primary : scheme.error;
+    final sourceLabel = switch (movement.source) {
+      StockMovementSource.restock => 'Barang masuk',
+      StockMovementSource.sale => 'Penjualan',
+      StockMovementSource.opname => 'Opname',
+    };
+    final note = movement.note.trim();
 
     return Card(
       child: ListTile(
@@ -154,7 +174,12 @@ class _MovementTile extends StatelessWidget {
           overflow: TextOverflow.ellipsis,
           style: const TextStyle(fontWeight: FontWeight.w800),
         ),
-        subtitle: Text(AppFormatters.date(movement.tanggal)),
+        subtitle: Text(
+          note.isEmpty
+              ? '$sourceLabel - ${AppFormatters.date(movement.tanggal)}'
+              : '$sourceLabel - $note\n${AppFormatters.date(movement.tanggal)}',
+        ),
+        isThreeLine: note.isNotEmpty,
         trailing: Text(
           '${isIn ? '+' : '-'}${movement.qty}',
           style: TextStyle(color: color, fontWeight: FontWeight.w900),

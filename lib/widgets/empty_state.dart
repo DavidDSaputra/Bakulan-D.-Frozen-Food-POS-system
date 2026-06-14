@@ -3,12 +3,14 @@ import 'package:flutter/material.dart';
 class EmptyState extends StatelessWidget {
   const EmptyState({
     super.key,
-    required this.icon,
+    this.icon,
+    this.iconWidget,
     required this.title,
     required this.subtitle,
-  });
+  }) : assert(icon != null || iconWidget != null, 'Either icon or iconWidget must be provided');
 
-  final IconData icon;
+  final IconData? icon;
+  final Widget? iconWidget;
   final String title;
   final String subtitle;
 
@@ -28,7 +30,8 @@ class EmptyState extends StatelessWidget {
                 color: scheme.primaryContainer,
                 shape: BoxShape.circle,
               ),
-              child: Icon(icon, color: scheme.onPrimaryContainer, size: 34),
+              child: iconWidget ??
+                  Icon(icon, color: scheme.onPrimaryContainer, size: 34),
             ),
             const SizedBox(height: 18),
             Text(

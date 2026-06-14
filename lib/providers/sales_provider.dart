@@ -18,6 +18,9 @@ class SalesProvider extends ChangeNotifier {
     required List<SaleItem> items,
     required String metodePembayaran,
     required String userId,
+    String? paymentProofUrl,
+    String? paymentAccountName,
+    String? paymentAccountNumber,
   }) async {
     _isLoading = true;
     notifyListeners();
@@ -26,6 +29,9 @@ class SalesProvider extends ChangeNotifier {
         items: items,
         metodePembayaran: metodePembayaran,
         userId: userId,
+        paymentProofUrl: paymentProofUrl,
+        paymentAccountName: paymentAccountName,
+        paymentAccountNumber: paymentAccountNumber,
       );
     } finally {
       _isLoading = false;

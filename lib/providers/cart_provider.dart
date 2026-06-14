@@ -12,6 +12,7 @@ class CartProvider extends ChangeNotifier {
   int get totalPrice => _items.fold(0, (sum, item) => sum + item.subtotal);
 
   void addProduct(Product product) {
+    if (!product.isActive) throw Exception('${product.namaBarang} sedang off');
     if (product.stok <= 0) throw Exception('Stok ${product.namaBarang} habis');
 
     final index = _items.indexWhere((item) => item.product.id == product.id);

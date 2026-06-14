@@ -26,14 +26,20 @@ class ProductFormScreen extends StatefulWidget {
 class _ProductFormScreenState extends State<ProductFormScreen> {
   final _formKey = GlobalKey<FormState>();
   late final TextEditingController _nameController;
-  late final TextEditingController _priceController;
+  late final TextEditingController _purchasePriceController;
+  late final TextEditingController _salePriceController;
   late final TextEditingController _stockController;
   late final TextEditingController _imageUrlController;
+  late final TextEditingController _barcodeController;
+  late final TextEditingController _descriptionController;
+  late final TextEditingController _expirationDateController;
   final _imagePicker = ImagePicker();
   final _cloudinaryService = CloudinaryService();
   Uint8List? _previewImageBytes;
   String? _selectedCategoryId;
+  DateTime? _expirationDate;
   bool _isUploadingImage = false;
+  bool _isActive = true;
 
   bool get _isEdit => widget.product != null;
 
@@ -42,24 +48,40 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
     super.initState();
     final product = widget.product;
     _nameController = TextEditingController(text: product?.namaBarang ?? '');
-    _priceController = TextEditingController(
-      text: product == null ? '' : product.harga.toString(),
+    _purchasePriceController = TextEditingController(
+      text: product == null ? '' : product.hargaBeli.toString(),
+    );
+    _salePriceController = TextEditingController(
+      text: product == null ? '' : product.hargaJual.toString(),
     );
     _stockController = TextEditingController(
       text: product == null ? '' : product.stok.toString(),
+    );
+    _barcodeController = TextEditingController(text: product?.barcode ?? '');
+    _descriptionController = TextEditingController(
+      text: product?.description ?? '',
+    );
+    _expirationDate = product?.expirationDate;
+    _expirationDateController = TextEditingController(
+      text: _formatExpirationDate(_expirationDate),
     );
     _selectedCategoryId = product?.kategoriId.isEmpty == true
         ? null
         : product?.kategoriId;
     _imageUrlController = TextEditingController(text: product?.imageUrl ?? '');
+    _isActive = product?.isActive ?? true;
   }
 
   @override
   void dispose() {
     _nameController.dispose();
-    _priceController.dispose();
+    _purchasePriceController.dispose();
+    _salePriceController.dispose();
     _stockController.dispose();
     _imageUrlController.dispose();
+    _barcodeController.dispose();
+    _descriptionController.dispose();
+    _expirationDateController.dispose();
     super.dispose();
   }
 
@@ -69,10 +91,15 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
     final product = Product(
       id: widget.product?.id ?? '',
       namaBarang: _nameController.text.trim(),
-      harga: int.parse(_priceController.text.trim()),
+      hargaBeli: int.parse(_purchasePriceController.text.trim()),
+      harga: int.parse(_salePriceController.text.trim()),
       stok: int.parse(_stockController.text.trim()),
       kategoriId: _selectedCategoryId ?? '',
       imageUrl: _imageUrlController.text.trim(),
+      isActive: _isActive,
+      barcode: _barcodeController.text.trim(),
+      description: _descriptionController.text.trim(),
+      expirationDate: _expirationDate,
     );
 
     try {
@@ -91,6 +118,35 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
         showAppSnackBar(context, 'Gagal menyimpan barang', isError: true);
       }
     }
+  }
+
+  Future<void> _pickExpirationDate() async {
+    final now = DateTime.now();
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: _expirationDate ?? now,
+      firstDate: DateTime(now.year - 2),
+      lastDate: DateTime(now.year + 20, 12, 31),
+      helpText: 'Pilih tanggal expired',
+    );
+    if (picked == null || !mounted) return;
+
+    setState(() {
+      _expirationDate = DateTime(picked.year, picked.month, picked.day);
+      _expirationDateController.text = _formatExpirationDate(_expirationDate);
+    });
+  }
+
+  void _clearExpirationDate() {
+    setState(() {
+      _expirationDate = null;
+      _expirationDateController.clear();
+    });
+  }
+
+  String _formatExpirationDate(DateTime? date) {
+    if (date == null) return '';
+    return '${date.month.toString().padLeft(2, '0')}/${date.year}';
   }
 
   Future<void> _pickAndUploadImage() async {
@@ -170,16 +226,11 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
                           )
                         else
                           _ImagePlaceholder(scheme: scheme),
-                        DecoratedBox(
-                          decoration: BoxDecoration(
-                            gradient: LinearGradient(
-                              begin: Alignment.topCenter,
-                              end: Alignment.bottomCenter,
-                              colors: [
-                                Colors.transparent,
-                                Colors.black.withValues(alpha: .48),
-                              ],
-                            ),
+                        Align(
+                          alignment: Alignment.bottomCenter,
+                          child: Container(
+                            height: 76,
+                            color: Colors.black.withValues(alpha: .28),
                           ),
                         ),
                         Positioned(
@@ -220,12 +271,24 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
                   ),
                   const SizedBox(height: 14),
                   AppTextField(
-                    controller: _priceController,
-                    label: 'Harga',
+                    controller: _purchasePriceController,
+                    label: 'Harga Beli',
+                    icon: Icons.shopping_bag_rounded,
+                    keyboardType: TextInputType.number,
+                    validator: (value) => Validators.nonNegativeNumber(
+                      value,
+                      field: 'Harga beli',
+                    ),
+                    textInputAction: TextInputAction.next,
+                  ),
+                  const SizedBox(height: 14),
+                  AppTextField(
+                    controller: _salePriceController,
+                    label: 'Harga Jual',
                     icon: Icons.sell_rounded,
                     keyboardType: TextInputType.number,
                     validator: (value) =>
-                        Validators.positiveNumber(value, field: 'Harga'),
+                        Validators.positiveNumber(value, field: 'Harga jual'),
                     textInputAction: TextInputAction.next,
                   ),
                   const SizedBox(height: 14),
@@ -236,6 +299,14 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
                     keyboardType: TextInputType.number,
                     validator: (value) =>
                         Validators.nonNegativeNumber(value, field: 'Stok'),
+                    textInputAction: TextInputAction.next,
+                  ),
+                  const SizedBox(height: 14),
+                  AppTextField(
+                    controller: _barcodeController,
+                    label: 'Barcode',
+                    icon: Icons.qr_code_2_rounded,
+                    keyboardType: TextInputType.text,
                     textInputAction: TextInputAction.next,
                   ),
                   const SizedBox(height: 14),
@@ -291,6 +362,34 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
                     },
                   ),
                   const SizedBox(height: 14),
+                  TextFormField(
+                    controller: _descriptionController,
+                    maxLines: 3,
+                    minLines: 2,
+                    textInputAction: TextInputAction.newline,
+                    decoration: const InputDecoration(
+                      labelText: 'Deskripsi',
+                      prefixIcon: Icon(Icons.notes_rounded),
+                    ),
+                  ),
+                  const SizedBox(height: 14),
+                  TextFormField(
+                    controller: _expirationDateController,
+                    readOnly: true,
+                    onTap: _pickExpirationDate,
+                    decoration: InputDecoration(
+                      labelText: 'Tanggal Expired',
+                      prefixIcon: const Icon(Icons.event_rounded),
+                      suffixIcon: _expirationDate == null
+                          ? const Icon(Icons.calendar_month_rounded)
+                          : IconButton(
+                              tooltip: 'Kosongkan tanggal expired',
+                              onPressed: _clearExpirationDate,
+                              icon: const Icon(Icons.close_rounded),
+                            ),
+                    ),
+                  ),
+                  const SizedBox(height: 14),
                   AppTextField(
                     controller: _imageUrlController,
                     label: 'URL Gambar Produk Cloudinary',
@@ -298,6 +397,21 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
                     keyboardType: TextInputType.url,
                     onChanged: (_) => setState(() {}),
                     textInputAction: TextInputAction.done,
+                  ),
+                  const SizedBox(height: 14),
+                  SwitchListTile.adaptive(
+                    value: _isActive,
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 4),
+                    title: const Text(
+                      'Barang aktif',
+                      style: TextStyle(fontWeight: FontWeight.w800),
+                    ),
+                    subtitle: Text(
+                      _isActive
+                          ? 'Barang tampil di kasir'
+                          : 'Barang disembunyikan dari penjualan',
+                    ),
+                    onChanged: (value) => setState(() => _isActive = value),
                   ),
                   const SizedBox(height: 24),
                   Consumer<ProductProvider>(

@@ -9,17 +9,38 @@ import '../utils/validators.dart';
 import '../widgets/app_button.dart';
 import '../widgets/loading_indicator.dart';
 
-class RestockScreen extends StatefulWidget {
+class RestockScreen extends StatelessWidget {
   const RestockScreen({super.key});
 
   @override
-  State<RestockScreen> createState() => _RestockScreenState();
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: const Text('Tambah Stok')),
+      body: StreamBuilder<List<Product>>(
+        stream: context.read<ProductProvider>().watchProducts(),
+        builder: (context, snapshot) {
+          if (!snapshot.hasData) return const AppLoadingIndicator();
+          return _RestockForm(products: snapshot.data!);
+        },
+      ),
+    );
+  }
 }
 
-class _RestockScreenState extends State<RestockScreen> {
+class _RestockForm extends StatefulWidget {
+  const _RestockForm({required this.products});
+
+  final List<Product> products;
+
+  @override
+  State<_RestockForm> createState() => _RestockFormState();
+}
+
+class _RestockFormState extends State<_RestockForm> {
   final _formKey = GlobalKey<FormState>();
   final _qtyController = TextEditingController();
-  Product? _selectedProduct;
+  String? _selectedProductId;
+  bool _isSubmitting = false;
 
   @override
   void dispose() {
@@ -28,88 +49,93 @@ class _RestockScreenState extends State<RestockScreen> {
   }
 
   Future<void> _save() async {
-    if (!_formKey.currentState!.validate() || _selectedProduct == null) {
+    if (!_formKey.currentState!.validate() || _selectedProductId == null) {
       showAppSnackBar(context, 'Pilih barang terlebih dahulu', isError: true);
       return;
     }
 
+    final selectedIndex = widget.products.indexWhere(
+      (product) => product.id == _selectedProductId,
+    );
+    if (selectedIndex == -1) {
+      showAppSnackBar(context, 'Barang tidak ditemukan', isError: true);
+      return;
+    }
+
+    final qty = int.tryParse(_qtyController.text.trim()) ?? 0;
+    if (qty <= 0) {
+      showAppSnackBar(context, 'Qty harus lebih dari 0', isError: true);
+      return;
+    }
+
+    setState(() => _isSubmitting = true);
     final userId = context.read<AuthProvider>().user?.id ?? '-';
     try {
       await context.read<ProductProvider>().restock(
-        _selectedProduct!,
-        int.parse(_qtyController.text.trim()),
+        widget.products[selectedIndex],
+        qty,
         userId,
       );
       if (!mounted) return;
-      showAppSnackBar(context, 'Barang masuk berhasil disimpan');
-      Navigator.pop(context);
+      Navigator.pop(context, true);
     } catch (_) {
-      if (mounted) {
-        showAppSnackBar(context, 'Gagal menyimpan barang masuk', isError: true);
-      }
+      if (!mounted) return;
+      setState(() => _isSubmitting = false);
+      showAppSnackBar(context, 'Gagal menambah stok', isError: true);
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: const Text('Input Barang Masuk')),
-      body: StreamBuilder<List<Product>>(
-        stream: context.read<ProductProvider>().watchProducts(),
-        builder: (context, snapshot) {
-          if (!snapshot.hasData) return const AppLoadingIndicator();
-          final products = snapshot.data!;
-
-          return Form(
-            key: _formKey,
-            child: ListView(
-              padding: const EdgeInsets.all(16),
-              children: [
-                DropdownButtonFormField<Product>(
-                  initialValue: _selectedProduct,
-                  decoration: const InputDecoration(
-                    labelText: 'Pilih Barang',
-                    prefixIcon: Icon(Icons.inventory_2_rounded),
-                  ),
-                  items: products
-                      .map(
-                        (product) => DropdownMenuItem(
-                          value: product,
-                          child: Text(product.namaBarang),
-                        ),
-                      )
-                      .toList(),
-                  onChanged: (product) =>
-                      setState(() => _selectedProduct = product),
-                  validator: (value) =>
-                      value == null ? 'Barang wajib dipilih' : null,
-                ),
-                const SizedBox(height: 14),
-                TextFormField(
-                  controller: _qtyController,
-                  keyboardType: TextInputType.number,
-                  validator: (value) =>
-                      Validators.positiveNumber(value, field: 'Qty restock'),
-                  decoration: const InputDecoration(
-                    labelText: 'Qty Barang Masuk',
-                    prefixIcon: Icon(Icons.add_rounded),
-                  ),
-                ),
-                const SizedBox(height: 24),
-                Consumer<ProductProvider>(
-                  builder: (context, provider, _) {
-                    return AppButton(
-                      label: 'Simpan Restock',
-                      icon: Icons.save_alt_rounded,
-                      isLoading: provider.isLoading,
-                      onPressed: _save,
-                    );
-                  },
-                ),
-              ],
+    return Form(
+      key: _formKey,
+      child: ListView(
+        padding: const EdgeInsets.all(16),
+        children: [
+          DropdownButtonFormField<String>(
+            initialValue: _selectedProductId,
+            decoration: const InputDecoration(
+              labelText: 'Pilih Barang',
+              prefixIcon: Icon(Icons.inventory_2_rounded),
             ),
-          );
-        },
+            items: widget.products
+                .map(
+                  (product) => DropdownMenuItem(
+                    value: product.id,
+                    child: Text(product.namaBarang),
+                  ),
+                )
+                .toList(),
+            onChanged: (productId) =>
+                setState(() => _selectedProductId = productId),
+            validator: (value) => value == null ? 'Barang wajib dipilih' : null,
+          ),
+          const SizedBox(height: 14),
+          TextFormField(
+            controller: _qtyController,
+            keyboardType: TextInputType.number,
+            validator: (value) =>
+                Validators.positiveNumber(value, field: 'Qty restock'),
+            decoration: const InputDecoration(
+              labelText: 'Qty ditambahkan',
+              prefixIcon: Icon(Icons.add_rounded),
+            ),
+          ),
+          const SizedBox(height: 24),
+          AppButton(
+            label: 'Simpan Tambahan',
+            icon: Icons.save_alt_rounded,
+            isLoading: _isSubmitting,
+            onPressed: _save,
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'Stok akan ditambah dari jumlah yang ada sekarang, bukan diganti.',
+            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
+            ),
+          ),
+        ],
       ),
     );
   }

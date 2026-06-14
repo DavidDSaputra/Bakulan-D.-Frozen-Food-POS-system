@@ -19,7 +19,7 @@ class CategoryFilterBar extends StatelessWidget {
     final scheme = Theme.of(context).colorScheme;
 
     return SizedBox(
-      height: 42,
+      height: 40,
       child: ListView.separated(
         scrollDirection: Axis.horizontal,
         padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -29,20 +29,58 @@ class CategoryFilterBar extends StatelessWidget {
           final value = category?.id;
           final selected = selectedCategoryId == value;
 
-          return ChoiceChip(
-            label: Text(isAll ? 'Semua' : category!.namaKategori),
-            selected: selected,
-            showCheckmark: false,
-            avatar: isAll
-                ? Icon(
-                    Icons.apps_rounded,
-                    size: 18,
-                    color: selected
-                        ? scheme.onPrimaryContainer
-                        : scheme.onSurfaceVariant,
-                  )
-                : null,
-            onSelected: (_) => onChanged(value),
+          return AnimatedContainer(
+            duration: const Duration(milliseconds: 180),
+            decoration: BoxDecoration(
+              color: selected
+                  ? scheme.primary
+                  : scheme.surfaceContainerHighest.withValues(alpha: .6),
+              borderRadius: BorderRadius.circular(999),
+              border: Border.all(
+                color: selected
+                    ? scheme.primary
+                    : scheme.outlineVariant.withValues(alpha: .35),
+              ),
+            ),
+            child: Material(
+              color: Colors.transparent,
+              borderRadius: BorderRadius.circular(999),
+              child: InkWell(
+                onTap: () => onChanged(value),
+                borderRadius: BorderRadius.circular(999),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 14,
+                    vertical: 0,
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      if (isAll) ...[
+                        Icon(
+                          Icons.apps_rounded,
+                          size: 15,
+                          color: selected
+                              ? Colors.white
+                              : scheme.onSurfaceVariant,
+                        ),
+                        const SizedBox(width: 5),
+                      ],
+                      Text(
+                        isAll ? 'Semua' : category!.namaKategori,
+                        style: TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w700,
+                          color: selected
+                              ? Colors.white
+                              : scheme.onSurfaceVariant,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
           );
         },
         separatorBuilder: (_, _) => const SizedBox(width: 8),
