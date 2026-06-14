@@ -2,6 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
 import '../models/app_user.dart';
+import 'firestore_service.dart';
 
 class AuthService {
   AuthService({FirebaseAuth? firebaseAuth, FirebaseFirestore? firestore})
@@ -10,6 +11,7 @@ class AuthService {
 
   final FirebaseAuth _auth;
   final FirebaseFirestore _db;
+  final FirestoreService _firestoreService = FirestoreService();
 
   Stream<AppUser?> watchAppUser() {
     return _auth.authStateChanges().asyncMap((firebaseUser) async {
@@ -63,4 +65,20 @@ class AuthService {
   }
 
   Future<void> logout() => _auth.signOut();
+
+  Stream<List<AppUser>> watchUsers() => _firestoreService.watchUsers();
+
+  Future<AppUser> createUserAccount({
+    required String nama,
+    required String username,
+    required String password,
+    required UserRole role,
+  }) {
+    return _firestoreService.createUserAccount(
+      nama: nama,
+      username: username,
+      password: password,
+      role: role,
+    );
+  }
 }

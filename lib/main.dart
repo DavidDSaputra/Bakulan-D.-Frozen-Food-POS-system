@@ -11,7 +11,7 @@ import 'providers/sales_provider.dart';
 import 'providers/theme_provider.dart';
 import 'screens/app_shell.dart';
 import 'screens/login_screen.dart';
-import 'screens/splash_screen.dart';
+import 'screens/onboarding_screen.dart';
 import 'utils/app_theme.dart';
 
 Future<void> main() async {
@@ -58,24 +58,23 @@ class AuthGate extends StatefulWidget {
 }
 
 class _AuthGateState extends State<AuthGate> {
-  bool _ready = false;
+  bool _showIntro = true;
 
-  @override
-  void initState() {
-    super.initState();
-    Future.delayed(const Duration(milliseconds: 1900), () {
-      if (mounted) setState(() => _ready = true);
-    });
+  Future<void> _finishOnboarding() async {
+    if (!mounted) return;
+    setState(() => _showIntro = false);
   }
 
   @override
   Widget build(BuildContext context) {
-    if (!_ready) return const SplashScreen();
+    if (_showIntro) {
+      return OnboardingScreen(onFinished: _finishOnboarding);
+    }
 
     return Consumer<AuthProvider>(
       builder: (context, auth, _) {
         final child = auth.isCheckingUser
-            ? const SplashScreen()
+            ? const _AuthLoadingScreen()
             : auth.user == null
             ? const LoginScreen()
             : const AppShell();
@@ -108,6 +107,24 @@ class _AuthGateState extends State<AuthGate> {
           ),
         );
       },
+    );
+  }
+}
+
+class _AuthLoadingScreen extends StatelessWidget {
+  const _AuthLoadingScreen();
+
+  @override
+  Widget build(BuildContext context) {
+    return const Scaffold(
+      backgroundColor: Colors.white,
+      body: Center(
+        child: SizedBox(
+          width: 24,
+          height: 24,
+          child: CircularProgressIndicator(strokeWidth: 2.4),
+        ),
+      ),
     );
   }
 }
