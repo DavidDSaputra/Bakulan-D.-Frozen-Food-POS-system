@@ -5,6 +5,7 @@ import '../models/category.dart';
 import '../models/product.dart';
 import '../providers/auth_provider.dart';
 import '../providers/product_provider.dart';
+import '../utils/app_theme.dart';
 import '../utils/category_helpers.dart';
 import '../utils/formatters.dart';
 import '../utils/snackbar.dart';
@@ -22,9 +23,9 @@ class ProductDetailScreen extends StatefulWidget {
 }
 
 class _ProductDetailScreenState extends State<ProductDetailScreen> {
-  static const _orange = Color(0xFFFF4B16);
-  static const _page = Color(0xFFF5F5F5);
-  static const _text = Color(0xFF243757);
+  static const _orange = AppTheme.brandPrimary;
+  static const _page = AppTheme.brandSurface;
+  static const _text = AppTheme.brandInk;
   static const _muted = Color(0xFF8A94A6);
 
   void _openEdit(Product product) {
@@ -188,6 +189,7 @@ class _ProductImage extends StatelessWidget {
             ? Image.network(
                 product.imageUrl,
                 fit: BoxFit.contain,
+                cacheWidth: 720,
                 filterQuality: FilterQuality.medium,
                 errorBuilder: (context, error, stackTrace) => const Icon(
                   Icons.broken_image_rounded,

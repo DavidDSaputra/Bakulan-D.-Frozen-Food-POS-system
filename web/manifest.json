@@ -1,6 +1,6 @@
 {
-    "name": "bakulan_d_frozen",
-    "short_name": "bakulan_d_frozen",
+    "name": "Bakulan POS",
+    "short_name": "Bakulan POS",
     "start_url": ".",
     "display": "standalone",
     "background_color": "#FFFFFF",

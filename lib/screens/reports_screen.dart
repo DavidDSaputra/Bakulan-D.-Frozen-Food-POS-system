@@ -5,6 +5,7 @@ import '../models/sales_transaction.dart';
 import '../providers/sales_provider.dart';
 import '../services/report_excel_service.dart';
 import '../services/report_pdf_service.dart';
+import '../utils/app_theme.dart';
 import '../utils/formatters.dart';
 import '../utils/snackbar.dart';
 import '../widgets/empty_state.dart';
@@ -68,44 +69,33 @@ class _ReportsScreenState extends State<ReportsScreen> {
           0,
           (sum, trx) => sum + trx.qty,
         );
+        final statCards = [
+          StatCard(
+            title: 'Total Omzet',
+            value: AppFormatters.rupiah(revenue),
+            icon: Icons.payments_rounded,
+            color: const Color(0xFF27AE60),
+          ),
+          StatCard(
+            title: 'Item Terjual',
+            value: '$totalQty',
+            icon: Icons.shopping_cart_checkout_rounded,
+            color: const Color(0xFF3B82C4),
+          ),
+          StatCard(
+            title: 'Laba Kotor',
+            value: AppFormatters.rupiah(profit),
+            icon: Icons.trending_up_rounded,
+            color: AppTheme.brandPrimary,
+          ),
+        ];
 
         return ListView(
-          padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
+          padding: const EdgeInsets.fromLTRB(16, 6, 16, 24),
           children: [
-            SingleChildScrollView(
-              scrollDirection: Axis.horizontal,
-              child: SegmentedButton<ReportPeriod>(
-                segments: const [
-                  ButtonSegment(
-                    value: ReportPeriod.daily,
-                    label: Text('Hari'),
-                    icon: Icon(Icons.today_rounded),
-                  ),
-                  ButtonSegment(
-                    value: ReportPeriod.weekly,
-                    label: Text('Minggu'),
-                    icon: Icon(Icons.view_week_rounded),
-                  ),
-                  ButtonSegment(
-                    value: ReportPeriod.monthly,
-                    label: Text('Bulan'),
-                    icon: Icon(Icons.calendar_month_rounded),
-                  ),
-                  ButtonSegment(
-                    value: ReportPeriod.yearly,
-                    label: Text('Tahun'),
-                    icon: Icon(Icons.event_available_rounded),
-                  ),
-                  ButtonSegment(
-                    value: ReportPeriod.customDate,
-                    label: Text('Tanggal'),
-                    icon: Icon(Icons.edit_calendar_rounded),
-                  ),
-                ],
-                selected: {_period},
-                onSelectionChanged: (value) =>
-                    setState(() => _period = value.first),
-              ),
+            _PeriodSelector(
+              selected: _period,
+              onChanged: (value) => setState(() => _period = value),
             ),
             const SizedBox(height: 12),
             _ReportToolbar(
@@ -117,37 +107,8 @@ class _ReportsScreenState extends State<ReportsScreen> {
               onExportPdf: () => _exportPdf(filteredTransactions, range),
             ),
             const SizedBox(height: 14),
-            GridView(
-              shrinkWrap: true,
-              physics: const NeverScrollableScrollPhysics(),
-              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                crossAxisCount: 2,
-                mainAxisSpacing: 12,
-                crossAxisSpacing: 12,
-                childAspectRatio: .94,
-              ),
-              children: [
-                StatCard(
-                  title: 'Total Omzet',
-                  value: AppFormatters.rupiah(revenue),
-                  icon: Icons.payments_rounded,
-                  color: const Color(0xFF27AE60),
-                ),
-                StatCard(
-                  title: 'Item Terjual',
-                  value: '$totalQty',
-                  icon: Icons.shopping_cart_checkout_rounded,
-                  color: const Color(0xFF3B82C4),
-                ),
-                StatCard(
-                  title: 'Laba Kotor',
-                  value: AppFormatters.rupiah(profit),
-                  icon: Icons.trending_up_rounded,
-                  color: const Color(0xFFFF4B16),
-                ),
-              ],
-            ),
-            const SizedBox(height: 18),
+            _StatCardGrid(children: statCards),
+            const SizedBox(height: 16),
             _RevenueChart(
               points: _buildChartPoints(filteredTransactions),
               title: 'Grafik Omzet ${_periodLabel(_period)}',
@@ -436,6 +397,160 @@ class _ReportRange {
   final DateTime end;
 }
 
+double _responsiveItemWidth({
+  required int index,
+  required int itemCount,
+  required int columns,
+  required double maxWidth,
+  required double spacing,
+}) {
+  final safeColumns = columns <= 0 ? 1 : columns;
+  final baseWidth = (maxWidth - (spacing * (safeColumns - 1))) / safeColumns;
+  final itemsInLastRow = itemCount % safeColumns;
+  if (itemsInLastRow == 0) return baseWidth;
+
+  final lastRowStart = itemCount - itemsInLastRow;
+  if (index < lastRowStart) return baseWidth;
+
+  return (maxWidth - (spacing * (itemsInLastRow - 1))) / itemsInLastRow;
+}
+
+class _PeriodOption {
+  const _PeriodOption({
+    required this.value,
+    required this.label,
+    required this.icon,
+  });
+
+  final ReportPeriod value;
+  final String label;
+  final IconData icon;
+}
+
+class _PeriodSelector extends StatelessWidget {
+  const _PeriodSelector({required this.selected, required this.onChanged});
+
+  final ReportPeriod selected;
+  final ValueChanged<ReportPeriod> onChanged;
+
+  static const _options = [
+    _PeriodOption(
+      value: ReportPeriod.daily,
+      label: 'Hari',
+      icon: Icons.today_rounded,
+    ),
+    _PeriodOption(
+      value: ReportPeriod.weekly,
+      label: 'Minggu',
+      icon: Icons.view_week_rounded,
+    ),
+    _PeriodOption(
+      value: ReportPeriod.monthly,
+      label: 'Bulan',
+      icon: Icons.calendar_month_rounded,
+    ),
+    _PeriodOption(
+      value: ReportPeriod.yearly,
+      label: 'Tahun',
+      icon: Icons.event_available_rounded,
+    ),
+  ];
+
+  @override
+  Widget build(BuildContext context) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final maxWidth = constraints.maxWidth;
+        final columns = maxWidth >= 420 ? 3 : 2;
+        const spacing = 8.0;
+
+        return Wrap(
+          spacing: spacing,
+          runSpacing: spacing,
+          children: [
+            for (var index = 0; index < _options.length; index++)
+              SizedBox(
+                width: _responsiveItemWidth(
+                  index: index,
+                  itemCount: _options.length,
+                  columns: columns,
+                  maxWidth: maxWidth,
+                  spacing: spacing,
+                ),
+                child: _PeriodButton(
+                  option: _options[index],
+                  isSelected: _options[index].value == selected,
+                  onPressed: () => onChanged(_options[index].value),
+                ),
+              ),
+          ],
+        );
+      },
+    );
+  }
+}
+
+class _PeriodButton extends StatelessWidget {
+  const _PeriodButton({
+    required this.option,
+    required this.isSelected,
+    required this.onPressed,
+  });
+
+  final _PeriodOption option;
+  final bool isSelected;
+  final VoidCallback onPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    final foreground = isSelected
+        ? scheme.onPrimaryContainer
+        : scheme.onSurfaceVariant;
+
+    return Material(
+      color: isSelected ? scheme.primaryContainer : scheme.surfaceContainerLow,
+      borderRadius: BorderRadius.circular(16),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(16),
+        onTap: onPressed,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 160),
+          height: 48,
+          padding: const EdgeInsets.symmetric(horizontal: 12),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(
+              color: isSelected
+                  ? scheme.primary.withValues(alpha: .24)
+                  : scheme.outlineVariant.withValues(alpha: .55),
+            ),
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(option.icon, size: 18, color: foreground),
+              const SizedBox(width: 8),
+              Flexible(
+                child: Text(
+                  option.label,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  softWrap: false,
+                  style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                    color: foreground,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 class _ReportToolbar extends StatelessWidget {
   const _ReportToolbar({
     required this.rangeLabel,
@@ -456,62 +571,96 @@ class _ReportToolbar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
-    final labelStyle = Theme.of(context).textTheme.bodySmall?.copyWith(
+    final labelStyle = Theme.of(context).textTheme.bodyMedium?.copyWith(
       color: scheme.onSurfaceVariant,
-      fontWeight: FontWeight.w800,
+      fontWeight: FontWeight.w700,
     );
-    final actions = Wrap(
-      spacing: 8,
-      runSpacing: 8,
+    final actions = [
+      _ExportButton(
+        label: 'Tanggal',
+        icon: Icons.calendar_month_rounded,
+        isLoading: false,
+        isDisabled: isExportingExcel || isExportingPdf,
+        onPressed: onPickDate,
+        isPrimary: false,
+      ),
+      _ExportButton(
+        label: 'Excel',
+        icon: Icons.table_chart_rounded,
+        isLoading: isExportingExcel,
+        isDisabled: isExportingExcel || isExportingPdf,
+        onPressed: onExportExcel,
+        isPrimary: false,
+      ),
+      _ExportButton(
+        label: 'PDF',
+        icon: Icons.picture_as_pdf_rounded,
+        isLoading: isExportingPdf,
+        isDisabled: isExportingExcel || isExportingPdf,
+        onPressed: onExportPdf,
+        isPrimary: true,
+      ),
+    ];
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _ExportButton(
-          label: 'Tanggal',
-          icon: Icons.calendar_month_rounded,
-          isLoading: false,
-          isDisabled: isExportingExcel || isExportingPdf,
-          onPressed: onPickDate,
-          isPrimary: false,
+        Container(
+          width: double.infinity,
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 11),
+          decoration: BoxDecoration(
+            color: scheme.surfaceContainerLow,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(
+              color: scheme.outlineVariant.withValues(alpha: .42),
+            ),
+          ),
+          child: Row(
+            children: [
+              Icon(
+                Icons.date_range_rounded,
+                size: 18,
+                color: scheme.onSurfaceVariant,
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  rangeLabel,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: labelStyle,
+                ),
+              ),
+            ],
+          ),
         ),
-        _ExportButton(
-          label: 'Excel',
-          icon: Icons.table_chart_rounded,
-          isLoading: isExportingExcel,
-          isDisabled: isExportingExcel || isExportingPdf,
-          onPressed: onExportExcel,
-          isPrimary: false,
-        ),
-        _ExportButton(
-          label: 'PDF',
-          icon: Icons.picture_as_pdf_rounded,
-          isLoading: isExportingPdf,
-          isDisabled: isExportingExcel || isExportingPdf,
-          onPressed: onExportPdf,
-          isPrimary: true,
+        const SizedBox(height: 10),
+        LayoutBuilder(
+          builder: (context, constraints) {
+            final maxWidth = constraints.maxWidth;
+            final columns = maxWidth >= 430 ? 3 : 2;
+            const spacing = 8.0;
+
+            return Wrap(
+              spacing: spacing,
+              runSpacing: spacing,
+              children: [
+                for (var index = 0; index < actions.length; index++)
+                  SizedBox(
+                    width: _responsiveItemWidth(
+                      index: index,
+                      itemCount: actions.length,
+                      columns: columns,
+                      maxWidth: maxWidth,
+                      spacing: spacing,
+                    ),
+                    child: actions[index],
+                  ),
+              ],
+            );
+          },
         ),
       ],
-    );
-
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        if (constraints.maxWidth < 430) {
-          return Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(rangeLabel, style: labelStyle),
-              const SizedBox(height: 10),
-              actions,
-            ],
-          );
-        }
-
-        return Row(
-          children: [
-            Expanded(child: Text(rangeLabel, style: labelStyle)),
-            const SizedBox(width: 12),
-            actions,
-          ],
-        );
-      },
     );
   }
 }
@@ -535,19 +684,42 @@ class _ExportButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final buttonStyle = isPrimary
+        ? FilledButton.styleFrom(
+            minimumSize: const Size.fromHeight(42),
+            padding: const EdgeInsets.symmetric(horizontal: 12),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(16),
+            ),
+            textStyle: Theme.of(
+              context,
+            ).textTheme.labelLarge?.copyWith(fontWeight: FontWeight.w800),
+          )
+        : OutlinedButton.styleFrom(
+            minimumSize: const Size.fromHeight(42),
+            padding: const EdgeInsets.symmetric(horizontal: 12),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(16),
+            ),
+            textStyle: Theme.of(
+              context,
+            ).textTheme.labelLarge?.copyWith(fontWeight: FontWeight.w800),
+          );
+
     final child = SizedBox(
-      width: 108,
-      height: 38,
+      width: double.infinity,
       child: isPrimary
           ? FilledButton.icon(
+              style: buttonStyle,
               onPressed: isDisabled ? null : onPressed,
               icon: _buttonIcon(),
-              label: Text(label),
+              label: Text(label, softWrap: false),
             )
           : OutlinedButton.icon(
+              style: buttonStyle,
               onPressed: isDisabled ? null : onPressed,
               icon: _buttonIcon(),
-              label: Text(label),
+              label: Text(label, softWrap: false),
             ),
     );
 
@@ -560,6 +732,42 @@ class _ExportButton extends StatelessWidget {
       width: 16,
       height: 16,
       child: CircularProgressIndicator(strokeWidth: 2),
+    );
+  }
+}
+
+class _StatCardGrid extends StatelessWidget {
+  const _StatCardGrid({required this.children});
+
+  final List<Widget> children;
+
+  @override
+  Widget build(BuildContext context) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final maxWidth = constraints.maxWidth;
+        final columns = maxWidth >= 560 ? 3 : 2;
+        const spacing = 12.0;
+
+        return Wrap(
+          spacing: spacing,
+          runSpacing: spacing,
+          children: [
+            for (var index = 0; index < children.length; index++)
+              SizedBox(
+                width: _responsiveItemWidth(
+                  index: index,
+                  itemCount: children.length,
+                  columns: columns,
+                  maxWidth: maxWidth,
+                  spacing: spacing,
+                ),
+                height: 136,
+                child: children[index],
+              ),
+          ],
+        );
+      },
     );
   }
 }
@@ -587,7 +795,7 @@ class _RevenueChart extends StatelessWidget {
     final chartMax = maxValue <= 0 ? 1 : maxValue;
 
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
         color: scheme.surfaceContainerLowest,
         borderRadius: BorderRadius.circular(18),
@@ -602,9 +810,9 @@ class _RevenueChart extends StatelessWidget {
               context,
             ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w900),
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 14),
           SizedBox(
-            height: 190,
+            height: 170,
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.end,
               children: [

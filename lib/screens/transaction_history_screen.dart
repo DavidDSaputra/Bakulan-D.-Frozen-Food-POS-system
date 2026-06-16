@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 
 import '../models/sales_transaction.dart';
 import '../providers/sales_provider.dart';
+import '../utils/app_theme.dart';
 import '../utils/formatters.dart';
 import '../widgets/empty_state.dart';
 import '../widgets/loading_indicator.dart';
@@ -18,7 +19,7 @@ class TransactionHistoryScreen extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(title: const Text('Histori Transaksi')),
       body: StreamBuilder<List<SalesTransaction>>(
-        stream: context.read<SalesProvider>().watchTransactions(),
+        stream: context.read<SalesProvider>().watchTransactions(limit: 120),
         builder: (context, snapshot) {
           if (!snapshot.hasData) return const AppLoadingIndicator();
 
@@ -81,7 +82,7 @@ class _LatestTransactionCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Material(
-      color: const Color(0xFFFF5A1F),
+      color: AppTheme.brandPrimary,
       borderRadius: BorderRadius.circular(18),
       child: InkWell(
         onTap: () => _openDetail(context, transaction),

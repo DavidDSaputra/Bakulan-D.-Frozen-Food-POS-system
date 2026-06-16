@@ -58,6 +58,8 @@ class ProductTile extends StatelessWidget {
                     ? Image.network(
                         product.imageUrl,
                         fit: BoxFit.cover,
+                        cacheWidth: 140,
+                        cacheHeight: 140,
                         filterQuality: FilterQuality.low,
                         gaplessPlayback: true,
                         loadingBuilder: (context, child, loadingProgress) {

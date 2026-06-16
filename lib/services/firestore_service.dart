@@ -38,14 +38,15 @@ class FirestoreService {
         .map((snapshot) => snapshot.docs.map(ProductCategory.fromDoc).toList());
   }
 
-  Stream<List<SalesTransaction>> watchTransactions() {
-    return _db
+  Stream<List<SalesTransaction>> watchTransactions({int? limit}) {
+    Query<Map<String, dynamic>> query = _db
         .collection('transaksi')
-        .orderBy('tanggal', descending: true)
-        .snapshots()
-        .map(
-          (snapshot) => snapshot.docs.map(SalesTransaction.fromDoc).toList(),
-        );
+        .orderBy('tanggal', descending: true);
+    if (limit != null) query = query.limit(limit);
+
+    return query.snapshots().map(
+      (snapshot) => snapshot.docs.map(SalesTransaction.fromDoc).toList(),
+    );
   }
 
   Stream<List<AppUser>> watchUsers() {

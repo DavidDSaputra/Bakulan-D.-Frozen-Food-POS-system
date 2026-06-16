@@ -11,6 +11,7 @@ import '../providers/auth_provider.dart';
 import '../providers/product_provider.dart';
 import '../providers/sales_provider.dart';
 import '../services/cloudinary_service.dart';
+import '../utils/app_theme.dart';
 import '../utils/formatters.dart';
 import '../utils/snackbar.dart';
 import '../widgets/empty_state.dart';
@@ -32,7 +33,7 @@ class _StockOpnameScreenState extends State<StockOpnameScreen> {
       stream: context.read<ProductProvider>().watchProducts(),
       builder: (context, productSnapshot) {
         return StreamBuilder<List<SalesTransaction>>(
-          stream: context.read<SalesProvider>().watchTransactions(),
+          stream: context.read<SalesProvider>().watchTransactions(limit: 1000),
           builder: (context, trxSnapshot) {
             return StreamBuilder<List<StockMovement>>(
               stream: context.read<ProductProvider>().watchOpnameMovements(),
@@ -474,7 +475,7 @@ class _OpnameResultPanel extends StatelessWidget {
                 label: 'Barang Terdampak',
                 value: '${affectedItems.length} barang',
                 icon: Icons.inventory_2_outlined,
-                color: const Color(0xFFFF4A01),
+                color: AppTheme.brandPrimary,
               ),
             ),
           ],

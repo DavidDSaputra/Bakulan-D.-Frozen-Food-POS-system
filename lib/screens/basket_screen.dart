@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import '../models/sale_item.dart';
 import '../models/product.dart';
 import '../providers/cart_provider.dart';
+import '../utils/app_theme.dart';
 import '../utils/formatters.dart';
 import '../utils/snackbar.dart';
 import '../widgets/app_button.dart';
@@ -69,7 +70,7 @@ class BasketScreen extends StatelessWidget {
                       vertical: 7,
                     ),
                     decoration: BoxDecoration(
-                      color: const Color(0xFFFFEBDD),
+                      color: AppTheme.brandTint,
                       borderRadius: BorderRadius.circular(999),
                     ),
                     child: Row(
@@ -230,11 +231,13 @@ class _BasketItemTile extends StatelessWidget {
               child: Container(
                 width: 42,
                 height: 42,
-                color: const Color(0xFFFFF2EC),
+                color: AppTheme.brandSurface,
                 child: hasImage
                     ? Image.network(
                         product.imageUrl,
                         fit: BoxFit.cover,
+                        cacheWidth: 96,
+                        cacheHeight: 96,
                         filterQuality: FilterQuality.low,
                         gaplessPlayback: true,
                         errorBuilder: (context, error, stackTrace) => Icon(
@@ -263,7 +266,7 @@ class _BasketItemTile extends StatelessWidget {
                       vertical: 4,
                     ),
                     decoration: BoxDecoration(
-                      color: const Color(0xFFFFE2D6),
+                      color: AppTheme.brandBorder,
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: Text(
@@ -307,8 +310,8 @@ class _QtyStepper extends StatelessWidget {
           icon: Icons.remove_rounded,
           onTap: onRemove,
           background: Colors.white,
-          iconColor: const Color(0xFFFF5A1F),
-          borderColor: const Color(0xFFFFE2D6),
+          iconColor: AppTheme.brandPrimary,
+          borderColor: AppTheme.brandBorder,
         ),
         const SizedBox(width: 10),
         SizedBox(
@@ -323,9 +326,9 @@ class _QtyStepper extends StatelessWidget {
         _QtyButton(
           icon: Icons.add_rounded,
           onTap: onAdd,
-          background: const Color(0xFFFF5A1F),
+          background: AppTheme.brandPrimary,
           iconColor: Colors.white,
-          borderColor: const Color(0xFFFF5A1F),
+          borderColor: AppTheme.brandPrimary,
         ),
       ],
     );

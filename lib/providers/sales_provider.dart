@@ -9,9 +9,18 @@ class SalesProvider extends ChangeNotifier {
 
   bool _isLoading = false;
   bool get isLoading => _isLoading;
+  final Map<int, Stream<List<SalesTransaction>>> _limitedTransactionStreams =
+      {};
+  late final Stream<List<SalesTransaction>> _transactionsStream = service
+      .watchTransactions();
 
-  Stream<List<SalesTransaction>> watchTransactions() {
-    return service.watchTransactions();
+  Stream<List<SalesTransaction>> watchTransactions({int? limit}) {
+    if (limit == null) return _transactionsStream;
+
+    return _limitedTransactionStreams.putIfAbsent(
+      limit,
+      () => service.watchTransactions(limit: limit),
+    );
   }
 
   Future<void> processSale({

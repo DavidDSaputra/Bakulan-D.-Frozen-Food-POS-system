@@ -7,14 +7,12 @@ import '../models/sales_transaction.dart';
 import '../providers/auth_provider.dart';
 import '../providers/product_provider.dart';
 import '../providers/sales_provider.dart';
+import '../utils/app_theme.dart';
 import '../utils/formatters.dart';
 import '../widgets/empty_state.dart';
 import '../widgets/loading_indicator.dart';
 import 'basket_screen.dart';
-import 'products_screen.dart';
 import 'sales_screen.dart';
-import 'stock_history_screen.dart';
-import 'stock_screen.dart';
 import 'transaction_detail_screen.dart';
 import 'transaction_history_screen.dart';
 
@@ -29,7 +27,7 @@ class DashboardScreen extends StatelessWidget {
       stream: context.read<ProductProvider>().watchProducts(),
       builder: (context, productSnapshot) {
         return StreamBuilder<List<SalesTransaction>>(
-          stream: context.read<SalesProvider>().watchTransactions(),
+          stream: context.read<SalesProvider>().watchTransactions(limit: 120),
           builder: (context, trxSnapshot) {
             if (!productSnapshot.hasData || !trxSnapshot.hasData) {
               return const AppLoadingIndicator();
@@ -50,13 +48,26 @@ class DashboardScreen extends StatelessWidget {
               0,
               (sum, product) => sum + product.stok,
             );
+            final availableProducts = products
+                .where((product) => product.stok > 0)
+                .length;
+            final today = DateTime.now();
+            final todayStart = DateTime(today.year, today.month, today.day);
+            final todayEnd = todayStart.add(const Duration(days: 1));
+            final todayTransactions = transactions
+                .where(
+                  (trx) =>
+                      !trx.tanggal.isBefore(todayStart) &&
+                      trx.tanggal.isBefore(todayEnd),
+                )
+                .length;
 
             if (!isOwner) {
               return _CashierDashboard(
                 name: userName,
-                products: products.length,
+                todayTransactions: todayTransactions,
                 lowStock: lowStock,
-                totalStock: totalStock,
+                availableProducts: availableProducts,
                 transactions: transactions,
               );
             }
@@ -90,10 +101,7 @@ class DashboardScreen extends StatelessWidget {
                     child: _RecentTransactions(transactions: transactions),
                   )
                 else
-                  const _StaggeredEntry(
-                    delay: Duration(milliseconds: 220),
-                    child: _CashierShortcuts(),
-                  ),
+                  const SizedBox.shrink(),
               ],
             );
           },
@@ -106,42 +114,40 @@ class DashboardScreen extends StatelessWidget {
 class _CashierDashboard extends StatelessWidget {
   const _CashierDashboard({
     required this.name,
-    required this.products,
+    required this.todayTransactions,
     required this.lowStock,
-    required this.totalStock,
+    required this.availableProducts,
     required this.transactions,
   });
 
   final String name;
-  final int products;
+  final int todayTransactions;
   final int lowStock;
-  final int totalStock;
+  final int availableProducts;
   final List<SalesTransaction> transactions;
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: AppTheme.brandSurface,
       body: ListView(
         padding: EdgeInsets.zero,
         children: [
           _CashierHeader(name: name),
           Padding(
-            padding: const EdgeInsets.fromLTRB(16, 18, 16, 0),
-            child: _StatsGrid(
-              isOwner: false,
-              transactions: transactions.length,
-              products: products,
+            padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+            child: _CashierSummary(
+              todayTransactions: todayTransactions,
               lowStock: lowStock,
-              totalStock: totalStock,
+              availableProducts: availableProducts,
             ),
           ),
-          const SizedBox(height: 18),
+          const SizedBox(height: 16),
           const Padding(
             padding: EdgeInsets.symmetric(horizontal: 16),
-            child: _CashierMenuGrid(),
+            child: _CashierQuickActions(),
           ),
-          const SizedBox(height: 20),
+          const SizedBox(height: 18),
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 0, 16, 110),
             child: _CashierRecentTransactions(transactions: transactions),
@@ -155,8 +161,8 @@ class _CashierDashboard extends StatelessWidget {
 class _CashierHeader extends StatelessWidget {
   const _CashierHeader({required this.name});
 
-  static const _orange = Color(0xFFFF4A01);
-  static const _text = Color(0xFF243757);
+  static const _orange = AppTheme.brandPrimary;
+  static const _text = AppTheme.brandInk;
 
   final String name;
 
@@ -166,12 +172,12 @@ class _CashierHeader extends StatelessWidget {
     final dateLabel = AppFormatters.date(DateTime.now()).split(',').first;
 
     return SizedBox(
-      height: 322,
+      height: 292,
       child: Stack(
         clipBehavior: Clip.none,
         children: [
           Container(
-            height: 282,
+            height: 252,
             decoration: const BoxDecoration(
               color: _orange,
               borderRadius: BorderRadius.only(
@@ -234,19 +240,29 @@ class _CashierHeader extends StatelessWidget {
                           ],
                         ),
                       ),
-                      IconButton(
-                        tooltip: 'Notifikasi',
-                        onPressed: () {},
-                        icon: const Icon(
-                          Icons.notifications_none_rounded,
-                          color: Colors.white,
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 10,
+                          vertical: 6,
+                        ),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withValues(alpha: .16),
+                          borderRadius: BorderRadius.circular(999),
+                        ),
+                        child: const Text(
+                          'Kasir',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.w800,
+                            fontSize: 12,
+                          ),
                         ),
                       ),
                     ],
                   ),
-                  const SizedBox(height: 22),
+                  const SizedBox(height: 18),
                   Container(
-                    height: 48,
+                    height: 46,
                     padding: const EdgeInsets.symmetric(horizontal: 16),
                     decoration: BoxDecoration(
                       color: Colors.white,
@@ -269,23 +285,24 @@ class _CashierHeader extends StatelessWidget {
                       ],
                     ),
                   ),
-                  const SizedBox(height: 16),
+                  const SizedBox(height: 14),
                   Container(
-                    height: 126,
+                    height: 112,
                     width: double.infinity,
-                    padding: const EdgeInsets.fromLTRB(16, 14, 16, 12),
+                    padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
                     decoration: BoxDecoration(
-                      color: const Color(0xFFFFD5C7),
+                      color: AppTheme.brandTint,
                       borderRadius: BorderRadius.circular(14),
                     ),
                     child: Row(
                       children: [
                         Image.asset(
-                          'assets/images/splash_calculator.png',
-                          width: 92,
+                          'assets/images/logo.png',
+                          width: 78,
+                          cacheWidth: 180,
                           fit: BoxFit.contain,
                         ),
-                        const SizedBox(width: 14),
+                        const SizedBox(width: 12),
                         const Expanded(
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.end,
@@ -295,17 +312,17 @@ class _CashierHeader extends StatelessWidget {
                                 'Kasir Praktis',
                                 textAlign: TextAlign.right,
                                 style: TextStyle(
-                                  color: Color(0xFF1F2937),
-                                  fontSize: 18,
+                                  color: AppTheme.brandInk,
+                                  fontSize: 17,
                                   fontWeight: FontWeight.w900,
                                 ),
                               ),
-                              SizedBox(height: 6),
+                              SizedBox(height: 4),
                               Text(
-                                'Kelola penjualan dan cek riwayat transaksi dengan cepat.',
+                                'Fokus ke penjualan, keranjang, dan transaksi terbaru.',
                                 textAlign: TextAlign.right,
                                 style: TextStyle(
-                                  color: Color(0xFF4B5563),
+                                  color: AppTheme.brandMuted,
                                   fontSize: 12,
                                   height: 1.25,
                                   fontWeight: FontWeight.w700,
@@ -345,11 +362,11 @@ class _DashboardHero extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
-        color: const Color(0xFFFF4A01),
+        color: AppTheme.brandPrimary,
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
-            color: const Color(0xFFFF4A01).withValues(alpha: .18),
+            color: AppTheme.brandPrimary.withValues(alpha: .18),
             offset: const Offset(0, 10),
             blurRadius: 24,
           ),
@@ -421,7 +438,7 @@ class _DashboardHero extends StatelessWidget {
                 const Text(
                   'Omzet',
                   style: TextStyle(
-                    color: Color(0xFFFFE9DE),
+                    color: AppTheme.brandTint,
                     fontSize: 11,
                     fontWeight: FontWeight.w700,
                   ),
@@ -476,25 +493,25 @@ class _StatsGrid extends StatelessWidget {
           title: 'Transaksi',
           value: '$transactions',
           icon: FontAwesomeIcons.bagShopping,
-          color: const Color(0xFFFF4A01),
+          color: AppTheme.brandPrimary,
         ),
       _StatData(
         title: 'Barang',
         value: '$products',
         icon: FontAwesomeIcons.boxOpen,
-        color: const Color(0xFFFF4A01),
+        color: AppTheme.brandPrimary,
       ),
       _StatData(
         title: 'Stok tipis',
         value: '$lowStock',
         icon: FontAwesomeIcons.triangleExclamation,
-        color: const Color(0xFFFF4A01),
+        color: AppTheme.brandPrimary,
       ),
       _StatData(
         title: isOwner ? 'Total stok' : 'Siap dijual',
         value: '$totalStock',
         icon: FontAwesomeIcons.snowflake,
-        color: const Color(0xFFFF4A01),
+        color: AppTheme.brandPrimary,
       ),
     ];
 
@@ -533,7 +550,7 @@ class _CompactStatCard extends StatelessWidget {
     final scheme = Theme.of(context).colorScheme;
 
     return Container(
-      padding: const EdgeInsets.all(14),
+      padding: const EdgeInsets.fromLTRB(12, 12, 12, 10),
       decoration: BoxDecoration(
         color: scheme.surfaceContainerLowest,
         borderRadius: BorderRadius.circular(18),
@@ -550,17 +567,17 @@ class _CompactStatCard extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Container(
-            width: 40,
-            height: 40,
+            width: 36,
+            height: 36,
             decoration: BoxDecoration(
               color: data.color.withValues(alpha: .12),
               borderRadius: BorderRadius.circular(12),
             ),
             child: Center(
-              child: FaIcon(data.icon, color: data.color, size: 18),
+              child: FaIcon(data.icon, color: data.color, size: 16),
             ),
           ),
-          const Spacer(),
+          const SizedBox(height: 14),
           FittedBox(
             fit: BoxFit.scaleDown,
             alignment: Alignment.centerLeft,
@@ -589,8 +606,103 @@ class _CompactStatCard extends StatelessWidget {
   }
 }
 
-class _CashierShortcuts extends StatelessWidget {
-  const _CashierShortcuts();
+double _cashierAdaptiveItemWidth({
+  required int index,
+  required int itemCount,
+  required int columns,
+  required double maxWidth,
+  required double spacing,
+}) {
+  final baseWidth = (maxWidth - (spacing * (columns - 1))) / columns;
+  final lastRowCount = itemCount % columns;
+  if (lastRowCount == 0) return baseWidth;
+
+  final lastRowStart = itemCount - lastRowCount;
+  if (index < lastRowStart) return baseWidth;
+
+  return (maxWidth - (spacing * (lastRowCount - 1))) / lastRowCount;
+}
+
+void _pushScreen(BuildContext context, Widget screen) {
+  Navigator.push(context, MaterialPageRoute(builder: (_) => screen));
+}
+
+class _CashierSummary extends StatelessWidget {
+  const _CashierSummary({
+    required this.todayTransactions,
+    required this.lowStock,
+    required this.availableProducts,
+  });
+
+  final int todayTransactions;
+  final int lowStock;
+  final int availableProducts;
+
+  @override
+  Widget build(BuildContext context) {
+    final items = [
+      _StatData(
+        title: 'Transaksi hari ini',
+        value: '$todayTransactions',
+        icon: FontAwesomeIcons.cashRegister,
+        color: AppTheme.brandPrimary,
+      ),
+      _StatData(
+        title: 'Stok tipis',
+        value: '$lowStock',
+        icon: FontAwesomeIcons.triangleExclamation,
+        color: AppTheme.brandPrimary,
+      ),
+      _StatData(
+        title: 'Barang siap jual',
+        value: '$availableProducts',
+        icon: FontAwesomeIcons.boxOpen,
+        color: AppTheme.brandPrimary,
+      ),
+    ];
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Ringkasan Kasir',
+          style: Theme.of(
+            context,
+          ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w900),
+        ),
+        const SizedBox(height: 10),
+        LayoutBuilder(
+          builder: (context, constraints) {
+            const spacing = 10.0;
+            final columns = constraints.maxWidth >= 560 ? 3 : 2;
+
+            return Wrap(
+              spacing: spacing,
+              runSpacing: spacing,
+              children: [
+                for (var index = 0; index < items.length; index++)
+                  SizedBox(
+                    width: _cashierAdaptiveItemWidth(
+                      index: index,
+                      itemCount: items.length,
+                      columns: columns,
+                      maxWidth: constraints.maxWidth,
+                      spacing: spacing,
+                    ),
+                    height: 132,
+                    child: _CompactStatCard(data: items[index]),
+                  ),
+              ],
+            );
+          },
+        ),
+      ],
+    );
+  }
+}
+
+class _CashierQuickActions extends StatelessWidget {
+  const _CashierQuickActions();
 
   @override
   Widget build(BuildContext context) {
@@ -598,176 +710,164 @@ class _CashierShortcuts extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          'Shortcut',
+          'Shortcut Cepat',
           style: Theme.of(
             context,
           ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w900),
         ),
         const SizedBox(height: 10),
-        Material(
-          color: Theme.of(context).colorScheme.surfaceContainerLowest,
-          borderRadius: BorderRadius.circular(18),
-          child: InkWell(
-            onTap: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (_) => const TransactionHistoryScreen(),
-                ),
-              );
-            },
-            borderRadius: BorderRadius.circular(18),
-            child: Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(18),
-                border: Border.all(
-                  color: Theme.of(
-                    context,
-                  ).colorScheme.outlineVariant.withValues(alpha: .34),
-                ),
+        _PrimaryCashierAction(
+          title: 'Mulai Penjualan',
+          subtitle: 'Langsung buka halaman transaksi kasir.',
+          icon: FontAwesomeIcons.cashRegister,
+          onTap: () => _pushScreen(context, const SalesScreen()),
+        ),
+        const SizedBox(height: 10),
+        LayoutBuilder(
+          builder: (context, constraints) {
+            const spacing = 10.0;
+            final actions = [
+              _CashierActionItem(
+                title: 'Keranjang',
+                subtitle: 'Cek item sebelum bayar',
+                icon: FontAwesomeIcons.basketShopping,
+                onTap: () => _pushScreen(context, const BasketScreen()),
               ),
-              child: Row(
-                children: [
-                  Container(
-                    width: 44,
-                    height: 44,
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFFFEBDD),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: const Center(
-                      child: FaIcon(
-                        FontAwesomeIcons.receipt,
-                        color: Color(0xFFFF4A01),
-                        size: 18,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  const Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'Histori Transaksi',
-                          style: TextStyle(fontWeight: FontWeight.w900),
-                        ),
-                        SizedBox(height: 3),
-                        Text(
-                          'Lihat transaksi terbaru dan detailnya',
-                          style: TextStyle(
-                            color: Color(0xFF5D6B82),
-                            fontSize: 12,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const Icon(Icons.chevron_right_rounded),
-                ],
+              _CashierActionItem(
+                title: 'Transaksi',
+                subtitle: 'Lihat transaksi terbaru',
+                icon: FontAwesomeIcons.receipt,
+                onTap: () =>
+                    _pushScreen(context, const TransactionHistoryScreen()),
               ),
-            ),
-          ),
+            ];
+
+            return Wrap(
+              spacing: spacing,
+              runSpacing: spacing,
+              children: [
+                for (final action in actions)
+                  SizedBox(
+                    width: (constraints.maxWidth - spacing) / 2,
+                    child: _CashierActionCard(item: action),
+                  ),
+              ],
+            );
+          },
         ),
       ],
     );
   }
 }
 
-class _CashierMenuGrid extends StatelessWidget {
-  const _CashierMenuGrid();
-
-  @override
-  Widget build(BuildContext context) {
-    final items = [
-      _CashierMenuItem(
-        title: 'Penjualan',
-        icon: FontAwesomeIcons.cashRegister,
-        onTap: () => _push(context, const SalesScreen()),
-      ),
-      _CashierMenuItem(
-        title: 'Barang',
-        icon: FontAwesomeIcons.boxOpen,
-        onTap: () => _push(context, const ProductsScreen()),
-      ),
-      _CashierMenuItem(
-        title: 'Stok',
-        icon: FontAwesomeIcons.warehouse,
-        onTap: () => _push(context, const StockScreen()),
-      ),
-      _CashierMenuItem(
-        title: 'Riwayat Stok',
-        icon: FontAwesomeIcons.clockRotateLeft,
-        onTap: () => _push(context, const StockHistoryScreen()),
-      ),
-      _CashierMenuItem(
-        title: 'Keranjang',
-        icon: FontAwesomeIcons.basketShopping,
-        onTap: () => _push(context, const BasketScreen()),
-      ),
-      _CashierMenuItem(
-        title: 'Transaksi',
-        icon: FontAwesomeIcons.receipt,
-        onTap: () => _push(context, const TransactionHistoryScreen()),
-      ),
-    ];
-
-    return GridView.builder(
-      itemCount: items.length,
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
-      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: 2,
-        mainAxisSpacing: 12,
-        crossAxisSpacing: 12,
-        mainAxisExtent: 92,
-      ),
-      itemBuilder: (context, index) {
-        final item = items[index];
-        return _CashierMenuCard(item: item);
-      },
-    );
-  }
-
-  static void _push(BuildContext context, Widget screen) {
-    Navigator.push(context, MaterialPageRoute(builder: (_) => screen));
-  }
-}
-
-class _CashierMenuItem {
-  const _CashierMenuItem({
+class _CashierActionItem {
+  const _CashierActionItem({
     required this.title,
+    required this.subtitle,
     required this.icon,
     required this.onTap,
   });
 
   final String title;
+  final String subtitle;
   final IconData icon;
   final VoidCallback onTap;
 }
 
-class _CashierMenuCard extends StatelessWidget {
-  const _CashierMenuCard({required this.item});
+class _PrimaryCashierAction extends StatelessWidget {
+  const _PrimaryCashierAction({
+    required this.title,
+    required this.subtitle,
+    required this.icon,
+    required this.onTap,
+  });
 
-  static const _orange = Color(0xFFFF4A01);
-
-  final _CashierMenuItem item;
+  final String title;
+  final String subtitle;
+  final IconData icon;
+  final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
     return Material(
-      color: Theme.of(context).colorScheme.surfaceContainerLowest,
-      borderRadius: BorderRadius.circular(12),
+      color: AppTheme.brandPrimary,
+      borderRadius: BorderRadius.circular(20),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(20),
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(16, 16, 16, 16),
+          child: Row(
+            children: [
+              Container(
+                width: 48,
+                height: 48,
+                decoration: BoxDecoration(
+                  color: Colors.white.withValues(alpha: .16),
+                  borderRadius: BorderRadius.circular(14),
+                ),
+                child: Center(
+                  child: FaIcon(icon, color: Colors.white, size: 20),
+                ),
+              ),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      title,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.w900,
+                        fontSize: 16,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      subtitle,
+                      style: const TextStyle(
+                        color: AppTheme.brandTint,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 10),
+              const Icon(Icons.chevron_right_rounded, color: Colors.white),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _CashierActionCard extends StatelessWidget {
+  const _CashierActionCard({required this.item});
+
+  final _CashierActionItem item;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+
+    return Material(
+      color: scheme.surfaceContainerLowest,
+      borderRadius: BorderRadius.circular(16),
       child: InkWell(
         onTap: item.onTap,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(16),
         child: Container(
-          padding: const EdgeInsets.all(14),
+          height: 96,
+          padding: const EdgeInsets.fromLTRB(14, 14, 14, 12),
           decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: const Color(0xFFE4E8EF)),
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(
+              color: scheme.outlineVariant.withValues(alpha: .34),
+            ),
             boxShadow: [
               BoxShadow(
                 color: Colors.black.withValues(alpha: .035),
@@ -777,18 +877,28 @@ class _CashierMenuCard extends StatelessWidget {
             ],
           ),
           child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              FaIcon(item.icon, color: _orange, size: 24),
-              const SizedBox(height: 10),
+              FaIcon(item.icon, color: AppTheme.brandPrimary, size: 20),
+              const Spacer(),
               Text(
                 item.title,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
-                textAlign: TextAlign.center,
                 style: const TextStyle(
                   fontWeight: FontWeight.w900,
-                  color: Color(0xFF243757),
+                  color: AppTheme.brandInk,
+                ),
+              ),
+              const SizedBox(height: 2),
+              Text(
+                item.subtitle,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  color: scheme.onSurfaceVariant,
+                  fontSize: 11,
+                  fontWeight: FontWeight.w600,
                 ),
               ),
             ],
@@ -818,7 +928,7 @@ class _CashierRecentTransactions extends StatelessWidget {
                 'Recent Transactions',
                 style: Theme.of(context).textTheme.titleMedium?.copyWith(
                   fontWeight: FontWeight.w900,
-                  color: const Color(0xFF243757),
+                  color: AppTheme.brandInk,
                 ),
               ),
             ),
@@ -845,12 +955,12 @@ class _CashierRecentTransactions extends StatelessWidget {
             decoration: BoxDecoration(
               color: Theme.of(context).colorScheme.surfaceContainerLowest,
               borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: const Color(0xFFE4E8EF)),
+              border: Border.all(color: AppTheme.brandBorder),
             ),
             child: const Text(
               'Belum ada transaksi terbaru.',
               style: TextStyle(
-                color: Color(0xFF5D6B82),
+                color: AppTheme.brandMuted,
                 fontWeight: FontWeight.w700,
               ),
             ),
@@ -888,13 +998,13 @@ class _RecentTransactions extends StatelessWidget {
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
               decoration: BoxDecoration(
-                color: const Color(0xFFFFEBDD),
+                color: AppTheme.brandTint,
                 borderRadius: BorderRadius.circular(999),
               ),
               child: Text(
                 '${transactions.length} data',
                 style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                  color: const Color(0xFFC63D0F),
+                  color: AppTheme.brandPrimary,
                   fontWeight: FontWeight.w900,
                 ),
               ),
@@ -964,13 +1074,13 @@ class _TransactionTile extends StatelessWidget {
                 width: 40,
                 height: 40,
                 decoration: BoxDecoration(
-                  color: const Color(0xFFFFEBDD),
+                  color: AppTheme.brandTint,
                   borderRadius: BorderRadius.circular(10),
                 ),
                 child: const Center(
                   child: FaIcon(
                     FontAwesomeIcons.receipt,
-                    color: Color(0xFFFF4A01),
+                    color: AppTheme.brandPrimary,
                     size: 18,
                   ),
                 ),

@@ -2,6 +2,8 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 
+import 'app_theme.dart';
+
 OverlayEntry? _activeToast;
 
 void showAppSnackBar(
@@ -93,7 +95,7 @@ class _TopToastState extends State<_TopToast>
     final width = media.size.width;
     final toastWidth = width < 390 ? width - 32 : 340.0;
     final top = media.padding.top + 12;
-    final background = widget.isError ? scheme.error : const Color(0xFFC63D0F);
+    final background = widget.isError ? scheme.error : AppTheme.brandPrimary;
     final foreground = widget.isError ? scheme.onError : Colors.white;
 
     return Positioned(

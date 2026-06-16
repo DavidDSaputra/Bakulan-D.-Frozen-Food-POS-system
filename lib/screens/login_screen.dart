@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../providers/auth_provider.dart';
+import '../utils/app_theme.dart';
 import '../utils/snackbar.dart';
 import '../utils/validators.dart';
 
@@ -14,15 +15,15 @@ class LoginScreen extends StatefulWidget {
 
 class _LoginScreenState extends State<LoginScreen>
     with SingleTickerProviderStateMixin {
-  static const _brandBlue = Color(0xFFFF5A1F);
-  static const _brandDark = Color(0xFFC63D0F);
-  static const _aqua = Color(0xFFFFE0D3);
-  static const _ice = Color(0xFFFFF7F2);
-  static const _paper = Color(0xFFFFFFFF);
-  static const _ink = Color(0xFF243757);
-  static const _muted = Color(0xFF42526D);
-  static const _line = Color(0xFFFFC8B2);
-  static const _coral = Color(0xFFE97670);
+  static const _brandBlue = AppTheme.brandPrimary;
+  static const _brandDark = AppTheme.brandPrimary;
+  static const _aqua = AppTheme.brandTint;
+  static const _ice = AppTheme.brandSurface;
+  static const _paper = AppTheme.brandWhite;
+  static const _ink = AppTheme.brandInk;
+  static const _muted = AppTheme.brandMuted;
+  static const _line = AppTheme.brandBorder;
+  static const _coral = AppTheme.brandTintStrong;
 
   final _formKey = GlobalKey<FormState>();
   final _usernameController = TextEditingController();
@@ -204,20 +205,20 @@ class _LoginBackdropPainter extends CustomPainter {
     final glow = Paint()..color = _LoginScreenState._aqua;
     canvas.drawCircle(Offset(size.width * .13, size.height * .2), 96, glow);
 
-    final coralBlock = Paint()..color = const Color(0xFFFFE7E4);
+    final coralBlock = Paint()..color = AppTheme.brandTint;
     canvas.drawRect(
       Rect.fromLTWH(size.width * .82, 0, size.width * .08, size.height),
       coralBlock,
     );
 
-    final block = Paint()..color = const Color(0xFFFFE0D3);
+    final block = Paint()..color = AppTheme.brandTintStrong;
     canvas.drawRect(
       Rect.fromLTWH(size.width * .68, 0, size.width * .11, size.height),
       block,
     );
 
     final line = Paint()
-      ..color = const Color(0xFFFFC8B2)
+      ..color = AppTheme.brandBorder
       ..strokeWidth = 1;
     for (var i = 0; i < 9; i++) {
       final x = size.width * (.04 + i * .12);
@@ -299,9 +300,9 @@ class _BrandStory extends StatelessWidget {
         color: _LoginScreenState._paper,
         border: Border.all(color: _LoginScreenState._line, width: 1.2),
         borderRadius: BorderRadius.circular(14),
-        boxShadow: const [
+        boxShadow: [
           BoxShadow(
-            color: Color(0x1A0868B8),
+            color: AppTheme.brandPrimary.withValues(alpha: .10),
             offset: Offset(0, 16),
             blurRadius: 34,
           ),
@@ -330,20 +331,21 @@ class _LogoHero extends StatelessWidget {
         vertical: compact ? 14 : 18,
       ),
       decoration: BoxDecoration(
-        color: const Color(0xFFFFF0E8),
+        color: AppTheme.brandTint,
         border: Border.all(color: _LoginScreenState._line, width: 1.2),
         borderRadius: BorderRadius.circular(12),
-        boxShadow: const [
+        boxShadow: [
           BoxShadow(
-            color: Color(0x120868B8),
+            color: AppTheme.brandPrimary.withValues(alpha: .07),
             offset: Offset(0, 10),
             blurRadius: 18,
           ),
         ],
       ),
       child: Image.asset(
-        'assets/images/logo.jpeg',
+        'assets/images/logo.png',
         fit: BoxFit.contain,
+        cacheWidth: compact ? 420 : 720,
         errorBuilder: (context, error, stackTrace) => const Icon(
           Icons.ac_unit,
           color: _LoginScreenState._brandBlue,
@@ -381,9 +383,9 @@ class _LoginPanel extends StatelessWidget {
         color: _LoginScreenState._paper,
         border: Border.all(color: _LoginScreenState._line, width: 1.2),
         borderRadius: BorderRadius.circular(14),
-        boxShadow: const [
+        boxShadow: [
           BoxShadow(
-            color: Color(0x1F0868B8),
+            color: AppTheme.brandPrimary.withValues(alpha: .12),
             offset: Offset(0, 18),
             blurRadius: 32,
           ),
@@ -572,7 +574,7 @@ class _LoginTextFieldState extends State<_LoginTextField> {
       duration: const Duration(milliseconds: 180),
       curve: Curves.easeOut,
       decoration: BoxDecoration(
-        color: focused ? Colors.white : const Color(0xFFF7FBFF),
+        color: focused ? AppTheme.brandWhite : AppTheme.brandSurface,
         border: Border.all(
           color: focused
               ? _LoginScreenState._brandBlue
@@ -694,31 +696,12 @@ class _LoginHint extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: const Color(0xFFFFEBDD),
-        borderRadius: BorderRadius.circular(9),
-      ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Icon(
-            Icons.info_outline,
-            color: _LoginScreenState._brandBlue,
-            size: 18,
-          ),
-          const SizedBox(width: 9),
-          Expanded(
-            child: Text(
-              'Username kasir otomatis memakai email kasir@bakulandfrozen.local.',
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                color: _LoginScreenState._muted,
-                fontWeight: FontWeight.w700,
-              ),
-            ),
-          ),
-        ],
+    return Text(
+      'Hint: owner / kasir',
+      textAlign: TextAlign.center,
+      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+        color: _LoginScreenState._muted,
+        fontStyle: FontStyle.italic,
       ),
     );
   }

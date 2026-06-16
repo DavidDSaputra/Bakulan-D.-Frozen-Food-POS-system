@@ -3,6 +3,8 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
+import '../utils/app_theme.dart';
+
 class OnboardingScreen extends StatefulWidget {
   const OnboardingScreen({super.key, required this.onFinished});
 
@@ -14,8 +16,8 @@ class OnboardingScreen extends StatefulWidget {
 
 class _OnboardingScreenState extends State<OnboardingScreen>
     with TickerProviderStateMixin {
-  static const _orange = Color(0xFFFF5A1F);
-  static const _surface = Colors.white;
+  static const _brand = AppTheme.brandPrimary;
+  static const _surface = AppTheme.brandWhite;
 
   final _pageController = PageController();
   late final AnimationController _floatController;
@@ -78,7 +80,7 @@ class _OnboardingScreenState extends State<OnboardingScreen>
   Widget build(BuildContext context) {
     return AnnotatedRegion<SystemUiOverlayStyle>(
       value: const SystemUiOverlayStyle(
-        statusBarColor: _orange,
+        statusBarColor: _brand,
         statusBarIconBrightness: Brightness.light,
         systemNavigationBarColor: _surface,
         systemNavigationBarIconBrightness: Brightness.dark,
@@ -111,7 +113,7 @@ class _OnboardingScreenState extends State<OnboardingScreen>
                       child: TextButton(
                         onPressed: _finishing ? null : widget.onFinished,
                         style: TextButton.styleFrom(
-                          foregroundColor: _orange,
+                          foregroundColor: _brand,
                           padding: EdgeInsets.zero,
                           alignment: Alignment.centerLeft,
                           textStyle: const TextStyle(
@@ -127,12 +129,12 @@ class _OnboardingScreenState extends State<OnboardingScreen>
                         child: _SlideDots(
                           count: _slides.length,
                           index: _index,
-                          accent: _orange,
+                          accent: _brand,
                         ),
                       ),
                     ),
                     _NextButton(
-                      accent: _orange,
+                      accent: _brand,
                       finishing: _finishing,
                       onPressed: _finishing ? null : _next,
                       isLast: _index == _slides.length - 1,
@@ -154,8 +156,8 @@ class _OnboardingPage extends StatelessWidget {
   final _OnboardingSlideData data;
   final Animation<double> floatAnimation;
 
-  static const _orange = Color(0xFFFF5A1F);
-  static const _muted = Color(0xFF9AA3B2);
+  static const _brand = AppTheme.brandPrimary;
+  static const _muted = AppTheme.brandMuted;
 
   @override
   Widget build(BuildContext context) {
@@ -179,7 +181,7 @@ class _OnboardingPage extends StatelessWidget {
                   data.title,
                   textAlign: TextAlign.center,
                   style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                    color: _orange,
+                    color: _brand,
                     fontWeight: FontWeight.w900,
                     letterSpacing: 0,
                   ),
@@ -213,7 +215,7 @@ class _HeroPanel extends StatelessWidget {
   final String assetPath;
   final Animation<double> floatAnimation;
 
-  static const _orange = Color(0xFFFF5A1F);
+  static const _brand = AppTheme.brandPrimary;
 
   @override
   Widget build(BuildContext context) {
@@ -232,7 +234,7 @@ class _HeroPanel extends StatelessWidget {
                 width: double.infinity,
                 height: constraints.maxHeight * .84,
                 decoration: const BoxDecoration(
-                  color: _orange,
+                  color: _brand,
                   borderRadius: BorderRadius.only(
                     bottomLeft: Radius.circular(220),
                     bottomRight: Radius.circular(220),
@@ -317,7 +319,7 @@ class _SlideDots extends StatelessWidget {
             width: i == index ? 28 : 8,
             height: 8,
             decoration: BoxDecoration(
-              color: i == index ? accent : const Color(0xFFF0D8CD),
+              color: i == index ? accent : AppTheme.brandTintStrong,
               borderRadius: BorderRadius.circular(999),
             ),
           ),

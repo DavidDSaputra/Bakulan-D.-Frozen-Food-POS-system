@@ -7,6 +7,7 @@ import '../models/sales_transaction.dart';
 import '../providers/cart_provider.dart';
 import '../providers/product_provider.dart';
 import '../providers/sales_provider.dart';
+import '../utils/app_theme.dart';
 import '../utils/category_helpers.dart';
 import '../utils/formatters.dart';
 import '../utils/snackbar.dart';
@@ -106,7 +107,7 @@ class _SalesScreenState extends State<SalesScreen> {
                     trailing: mode == _sortMode
                         ? const Icon(
                             Icons.check_circle_rounded,
-                            color: Color(0xFFFF5A1F),
+                            color: AppTheme.brandPrimary,
                           )
                         : null,
                     contentPadding: EdgeInsets.zero,
@@ -125,6 +126,9 @@ class _SalesScreenState extends State<SalesScreen> {
   Widget build(BuildContext context) {
     final cart = context.watch<CartProvider>();
     final scheme = Theme.of(context).colorScheme;
+    final cartQtyByProductId = {
+      for (final item in cart.items) item.product.id: item.qty,
+    };
 
     return Scaffold(
       backgroundColor: scheme.surface,
@@ -153,7 +157,7 @@ class _SalesScreenState extends State<SalesScreen> {
           );
 
           return StreamBuilder<List<SalesTransaction>>(
-            stream: context.read<SalesProvider>().watchTransactions(),
+            stream: context.read<SalesProvider>().watchTransactions(limit: 500),
             builder: (context, trxSnapshot) {
               return StreamBuilder<List<Product>>(
                 stream: context.read<ProductProvider>().watchActiveProducts(),
@@ -251,7 +255,8 @@ class _SalesScreenState extends State<SalesScreen> {
                                       Expanded(
                                         child: _ProductSlot(
                                           product: products[leftIndex],
-                                          cart: cart,
+                                          cartQtyByProductId:
+                                              cartQtyByProductId,
                                           onAdd: _addToCart,
                                           onRemove: _decrementCart,
                                         ),
@@ -261,7 +266,8 @@ class _SalesScreenState extends State<SalesScreen> {
                                         child: rightIndex < products.length
                                             ? _ProductSlot(
                                                 product: products[rightIndex],
-                                                cart: cart,
+                                                cartQtyByProductId:
+                                                    cartQtyByProductId,
                                                 onAdd: _addToCart,
                                                 onRemove: _decrementCart,
                                               )
@@ -282,7 +288,7 @@ class _SalesScreenState extends State<SalesScreen> {
       ),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: _goToPayment,
-        backgroundColor: const Color(0xFFFF5A1F),
+        backgroundColor: AppTheme.brandPrimary,
         foregroundColor: Colors.white,
         icon: const Icon(Icons.shopping_cart_checkout_rounded),
         label: const Text('Checkout'),
@@ -400,7 +406,10 @@ class _SearchRow extends StatelessWidget {
                 ),
                 focusedBorder: const OutlineInputBorder(
                   borderRadius: BorderRadius.all(Radius.circular(14)),
-                  borderSide: BorderSide(color: Color(0xFFFF5A1F), width: 1.5),
+                  borderSide: BorderSide(
+                    color: AppTheme.brandPrimary,
+                    width: 1.5,
+                  ),
                 ),
               ),
             ),
@@ -494,7 +503,7 @@ class _PillChip extends StatelessWidget {
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
     return Material(
-      color: selected ? const Color(0xFFFF5A1F) : Colors.white,
+      color: selected ? AppTheme.brandPrimary : Colors.white,
       borderRadius: BorderRadius.circular(999),
       child: InkWell(
         onTap: onTap,
@@ -505,9 +514,7 @@ class _PillChip extends StatelessWidget {
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(999),
             border: Border.all(
-              color: selected
-                  ? const Color(0xFFFF5A1F)
-                  : const Color(0xFFE2E8F0),
+              color: selected ? AppTheme.brandPrimary : const Color(0xFFE2E8F0),
             ),
           ),
           child: Text(
@@ -529,22 +536,19 @@ class _PillChip extends StatelessWidget {
 class _ProductSlot extends StatelessWidget {
   const _ProductSlot({
     required this.product,
-    required this.cart,
+    required this.cartQtyByProductId,
     required this.onAdd,
     required this.onRemove,
   });
 
   final Product product;
-  final CartProvider cart;
+  final Map<String, int> cartQtyByProductId;
   final void Function(Product product) onAdd;
   final void Function(Product product, int currentQty) onRemove;
 
   @override
   Widget build(BuildContext context) {
-    final currentQty = cart.items.indexWhere(
-      (item) => item.product.id == product.id,
-    );
-    final qty = currentQty == -1 ? 0 : cart.items[currentQty].qty;
+    final qty = cartQtyByProductId[product.id] ?? 0;
     return _ProductCard(
       product: product,
       currentQty: qty,
@@ -598,11 +602,11 @@ class _ProductCardState extends State<_ProductCard> {
     return RepaintBoundary(
       child: Container(
         decoration: BoxDecoration(
-          color: selected ? const Color(0xFFFFF2EC) : Colors.white,
+          color: selected ? AppTheme.brandSurface : Colors.white,
           borderRadius: BorderRadius.circular(16),
           border: Border.all(
             color: selected
-                ? const Color(0xFFFF5A1F)
+                ? AppTheme.brandPrimary
                 : scheme.outlineVariant.withValues(alpha: .35),
             width: selected ? 1.5 : 1,
           ),
@@ -631,13 +635,15 @@ class _ProductCardState extends State<_ProductCard> {
                       height: 34,
                       clipBehavior: Clip.antiAlias,
                       decoration: BoxDecoration(
-                        color: const Color(0xFFFFF2EC),
+                        color: AppTheme.brandSurface,
                         borderRadius: BorderRadius.circular(10),
                       ),
                       child: hasImage
                           ? Image.network(
                               widget.product.imageUrl,
                               fit: BoxFit.cover,
+                              cacheWidth: 96,
+                              cacheHeight: 96,
                               filterQuality: FilterQuality.low,
                               gaplessPlayback: true,
                               errorBuilder: (context, error, stackTrace) =>
@@ -652,13 +658,13 @@ class _ProductCardState extends State<_ProductCard> {
                         vertical: 4,
                       ),
                       decoration: BoxDecoration(
-                        color: const Color(0xFFFFE2D6),
+                        color: AppTheme.brandBorder,
                         borderRadius: BorderRadius.circular(8),
                       ),
                       child: Text(
                         AppFormatters.rupiah(widget.product.hargaJual),
                         style: const TextStyle(
-                          color: Color(0xFFFF5A1F),
+                          color: AppTheme.brandPrimary,
                           fontSize: 11,
                           fontWeight: FontWeight.w800,
                         ),
@@ -684,8 +690,8 @@ class _ProductCardState extends State<_ProductCard> {
                         icon: Icons.remove_rounded,
                         onTap: widget.onRemove,
                         background: Colors.white,
-                        iconColor: const Color(0xFFFF5A1F),
-                        borderColor: const Color(0xFFFFE2D6),
+                        iconColor: AppTheme.brandPrimary,
+                        borderColor: AppTheme.brandBorder,
                       ),
                       const SizedBox(width: 8),
                       Expanded(
@@ -702,9 +708,9 @@ class _ProductCardState extends State<_ProductCard> {
                       _CircleQtyButton(
                         icon: Icons.add_rounded,
                         onTap: widget.onAdd,
-                        background: const Color(0xFFFF5A1F),
+                        background: AppTheme.brandPrimary,
                         iconColor: Colors.white,
-                        borderColor: const Color(0xFFFF5A1F),
+                        borderColor: AppTheme.brandPrimary,
                       ),
                       const SizedBox(width: 8),
                       InkResponse(
@@ -713,7 +719,7 @@ class _ProductCardState extends State<_ProductCard> {
                         child: const Icon(
                           Icons.keyboard_arrow_up_rounded,
                           size: 20,
-                          color: Color(0xFF5D6B82),
+                          color: AppTheme.brandMuted,
                         ),
                       ),
                     ],
@@ -735,9 +741,9 @@ class _ProductCardState extends State<_ProductCard> {
                       _CircleQtyButton(
                         icon: Icons.add_rounded,
                         onTap: widget.onAdd,
-                        background: const Color(0xFFFF5A1F),
+                        background: AppTheme.brandPrimary,
                         iconColor: Colors.white,
-                        borderColor: const Color(0xFFFF5A1F),
+                        borderColor: AppTheme.brandPrimary,
                       ),
                       const SizedBox(width: 8),
                       InkResponse(
@@ -746,7 +752,7 @@ class _ProductCardState extends State<_ProductCard> {
                         child: const Icon(
                           Icons.keyboard_arrow_up_rounded,
                           size: 20,
-                          color: Color(0xFF5D6B82),
+                          color: AppTheme.brandMuted,
                         ),
                       ),
                     ],
@@ -773,7 +779,7 @@ class _ProductCardState extends State<_ProductCard> {
                         child: const Icon(
                           Icons.keyboard_arrow_down_rounded,
                           size: 18,
-                          color: Color(0xFF5D6B82),
+                          color: AppTheme.brandMuted,
                         ),
                       ),
                     ],
@@ -796,7 +802,7 @@ class _ProductFallbackIcon extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ColoredBox(
-      color: const Color(0xFFFFF2EC),
+      color: AppTheme.brandSurface,
       child: Icon(Icons.ac_unit_rounded, color: color, size: 18),
     );
   }

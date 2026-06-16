@@ -7,6 +7,7 @@ import '../models/app_user.dart';
 import '../providers/auth_provider.dart';
 import '../providers/theme_provider.dart';
 import '../services/seed_data.dart';
+import '../utils/app_theme.dart';
 import '../utils/snackbar.dart';
 import 'accounts_screen.dart';
 import 'dashboard_screen.dart';
@@ -150,7 +151,7 @@ class _AppShellState extends State<AppShell> {
                         ),
                       ),
                       Text(
-                        'Bakulan D. Frozen',
+                        'Bakulan POS',
                         style: Theme.of(context).textTheme.labelSmall?.copyWith(
                           color: scheme.onSurfaceVariant,
                           fontWeight: FontWeight.w700,
@@ -233,7 +234,7 @@ class _ShellNavBar extends StatelessWidget {
   final int selectedIndex;
   final ValueChanged<int> onSelected;
 
-  static const _accent = Color(0xFFFF4B16);
+  static const _accent = AppTheme.brandPrimary;
 
   @override
   Widget build(BuildContext context) {
@@ -439,21 +440,21 @@ class _DashboardGuideDialogState extends State<_DashboardGuideDialog>
       subtitle:
           'Owner melihat omzet, sedangkan kasir mendapat ringkasan kerja tanpa angka omzet.',
       icon: FontAwesomeIcons.chartLine,
-      accent: Color(0xFF27AE60),
+      accent: AppTheme.brandPrimary,
     ),
     _GuideStep(
       title: 'Pantau kondisi toko',
       subtitle:
           'Kartu statistik membantu membaca jumlah transaksi, total barang, stok menipis, dan item stok.',
       icon: FontAwesomeIcons.tableCellsLarge,
-      accent: Color(0xFFE97670),
+      accent: AppTheme.brandTintStrong,
     ),
     _GuideStep(
       title: 'Pindah modul dari bawah',
       subtitle:
           'Gunakan navigasi bawah untuk buka laporan, barang, stok, atau penjualan sesuai role akun.',
       icon: FontAwesomeIcons.handPointer,
-      accent: Color(0xFF2ECC71),
+      accent: AppTheme.brandMuted,
     ),
   ];
 

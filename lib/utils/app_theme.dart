@@ -1,33 +1,41 @@
 import 'package:flutter/material.dart';
 
 class AppTheme {
-  static const _orange = Color(0xFFFF5A1F);
-  static const _orangeDeep = Color(0xFFC63D0F);
-  static const _darkSurface = Color(0xFF221510);
-  static const _blueGray100 = Color(0xFF7A8699);
-  static const _blueGray300 = Color(0xFF5D6B82);
-  static const _blueGray500 = Color(0xFF42526D);
-  static const _blueGray700 = Color(0xFF243757);
+  static const brandPrimary = Color(0xFF12113C);
+  static const brandSurface = Color(0xFFF5F1FC);
+  static const brandWhite = Colors.white;
+  static const brandInk = Color(0xFF12113C);
+  static const brandMuted = Color(0xFF615C7D);
+  static const brandBorder = Color(0xFFD8D0EA);
+  static const brandTint = Color(0xFFE7E1F4);
+  static const brandTintStrong = Color(0xFFD4CCEA);
+  static const _darkSurface = Color(0xFF0D0C26);
+  static const _darkCard = Color(0xFF161436);
+  static const _darkBorder = Color(0xFF47436A);
 
   static ThemeData get light {
     final base = ColorScheme.fromSeed(
-      seedColor: _orange,
+      seedColor: brandPrimary,
       brightness: Brightness.light,
-      surface: Colors.white,
+      surface: brandSurface,
     );
     final scheme = base.copyWith(
-      primary: _orange,
-      onPrimary: Colors.white,
-      secondary: const Color(0xFFFF8A5B),
-      onSecondary: Colors.white,
-      tertiary: const Color(0xFFFFC3A8),
-      onSurface: _blueGray700,
-      onSurfaceVariant: _blueGray500,
-      outline: _blueGray300,
-      outlineVariant: _blueGray100,
-      surfaceContainerLowest: Colors.white,
-      primaryContainer: const Color(0xFFFFD7C7),
-      onPrimaryContainer: _orangeDeep,
+      primary: brandPrimary,
+      onPrimary: brandWhite,
+      secondary: brandTintStrong,
+      onSecondary: brandPrimary,
+      tertiary: brandTint,
+      onTertiary: brandPrimary,
+      surface: brandSurface,
+      onSurface: brandInk,
+      onSurfaceVariant: brandMuted,
+      outline: brandMuted,
+      outlineVariant: brandBorder,
+      surfaceContainerLowest: brandWhite,
+      surfaceContainerLow: const Color(0xFFF0EBF9),
+      surfaceContainerHighest: const Color(0xFFECE5F7),
+      primaryContainer: brandTint,
+      onPrimaryContainer: brandPrimary,
     );
     return _base(
       scheme,
@@ -40,21 +48,27 @@ class AppTheme {
 
   static ThemeData get dark {
     final base = ColorScheme.fromSeed(
-      seedColor: _orange,
+      seedColor: brandPrimary,
       brightness: Brightness.dark,
       surface: _darkSurface,
     );
     final scheme = base.copyWith(
-      primary: const Color(0xFFFF7A45),
-      onPrimary: Colors.white,
-      secondary: const Color(0xFFFFA27B),
-      tertiary: const Color(0xFF8A4B37),
-      onSurface: const Color(0xFFE8EBF2),
-      onSurfaceVariant: const Color(0xFFC5CCDA),
-      outline: const Color(0xFF7D879A),
-      outlineVariant: const Color(0xFF5A6476),
-      primaryContainer: const Color(0xFF5E2515),
-      onPrimaryContainer: const Color(0xFFFFD8CC),
+      primary: brandSurface,
+      onPrimary: brandPrimary,
+      secondary: const Color(0xFFBFB5DD),
+      onSecondary: brandPrimary,
+      tertiary: const Color(0xFF9D93C7),
+      onTertiary: brandPrimary,
+      surface: _darkSurface,
+      onSurface: brandSurface,
+      onSurfaceVariant: const Color(0xFFC7C1DE),
+      outline: const Color(0xFF8E88AC),
+      outlineVariant: _darkBorder,
+      surfaceContainerLowest: _darkCard,
+      surfaceContainerLow: const Color(0xFF1D1A42),
+      surfaceContainerHighest: const Color(0xFF282454),
+      primaryContainer: const Color(0xFF2A2758),
+      onPrimaryContainer: brandSurface,
     );
     return _base(
       scheme,
@@ -88,10 +102,10 @@ class AppTheme {
         shadowColor: scheme.shadow.withValues(alpha: .06),
         scrolledUnderElevation: 0,
         surfaceTintColor: Colors.transparent,
-        backgroundColor: scheme.primary,
-        foregroundColor: scheme.onPrimary,
+        backgroundColor: scheme.surface,
+        foregroundColor: scheme.onSurface,
         titleTextStyle: TextStyle(
-          color: scheme.onPrimary,
+          color: scheme.onSurface,
           fontSize: 20,
           fontWeight: FontWeight.w800,
         ),
@@ -136,6 +150,8 @@ class AppTheme {
           elevation: 0,
           shadowColor: Colors.transparent,
           shape: const StadiumBorder(),
+          backgroundColor: scheme.primary,
+          foregroundColor: scheme.onPrimary,
           textStyle: const TextStyle(
             fontWeight: FontWeight.w800,
             letterSpacing: 0,
@@ -146,6 +162,7 @@ class AppTheme {
         style: OutlinedButton.styleFrom(
           minimumSize: const Size.fromHeight(50),
           shape: const StadiumBorder(),
+          side: BorderSide(color: scheme.outlineVariant),
           textStyle: const TextStyle(
             fontWeight: FontWeight.w700,
             letterSpacing: 0,

@@ -16,6 +16,8 @@ import 'utils/app_theme.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  PaintingBinding.instance.imageCache.maximumSize = 300;
+  PaintingBinding.instance.imageCache.maximumSizeBytes = 48 << 20;
   await initializeDateFormatting('id_ID');
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
   runApp(const BakulanApp());
@@ -38,7 +40,7 @@ class BakulanApp extends StatelessWidget {
         builder: (context, themeProvider, _) {
           return MaterialApp(
             debugShowCheckedModeBanner: false,
-            title: 'Bakulan D. Frozen POS',
+            title: 'Bakulan POS',
             theme: AppTheme.light,
             darkTheme: AppTheme.dark,
             themeMode: themeProvider.themeMode,
@@ -116,8 +118,8 @@ class _AuthLoadingScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const Scaffold(
-      backgroundColor: Colors.white,
+    return Scaffold(
+      backgroundColor: AppTheme.brandSurface,
       body: Center(
         child: SizedBox(
           width: 24,

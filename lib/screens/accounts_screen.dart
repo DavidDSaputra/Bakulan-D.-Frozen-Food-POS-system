@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 
 import '../models/app_user.dart';
 import '../providers/auth_provider.dart';
+import '../utils/app_theme.dart';
 import '../utils/snackbar.dart';
 import '../utils/validators.dart';
 import '../widgets/empty_state.dart';
@@ -245,11 +246,11 @@ class _AccountHero extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
-        color: const Color(0xFFFF5A1F),
+        color: AppTheme.brandPrimary,
         borderRadius: BorderRadius.circular(24),
         boxShadow: [
           BoxShadow(
-            color: const Color(0xFFFF5A1F).withValues(alpha: .16),
+            color: AppTheme.brandPrimary.withValues(alpha: .16),
             blurRadius: 22,
             offset: const Offset(0, 10),
           ),
@@ -360,7 +361,7 @@ class _AccountTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
-    final color = user.isOwner ? const Color(0xFFFF4B16) : scheme.primary;
+    final color = user.isOwner ? AppTheme.brandPrimary : scheme.primary;
 
     return Card(
       child: Padding(

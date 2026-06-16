@@ -11,20 +11,31 @@ class ProductProvider extends ChangeNotifier {
   bool _isLoading = false;
   bool get isLoading => _isLoading;
 
-  Stream<List<Product>> watchProducts() => service.watchProducts();
+  late final Stream<List<Product>> _productsStream = service.watchProducts();
+  late final Stream<List<Product>> _activeProductsStream = _productsStream.map(
+    (products) => products.where((product) => product.isActive).toList(),
+  );
+  late final Stream<List<ProductCategory>> _categoriesStream = service
+      .watchCategories();
+  late final Stream<List<StockMovement>> _restockMovementsStream = service
+      .watchRestockMovements();
+  late final Stream<List<StockMovement>> _salesMovementsStream = service
+      .watchSalesMovements();
+  late final Stream<List<StockMovement>> _opnameMovementsStream = service
+      .watchOpnameMovements();
 
-  Stream<List<Product>> watchActiveProducts() => service.watchActiveProducts();
+  Stream<List<Product>> watchProducts() => _productsStream;
 
-  Stream<List<ProductCategory>> watchCategories() => service.watchCategories();
+  Stream<List<Product>> watchActiveProducts() => _activeProductsStream;
+
+  Stream<List<ProductCategory>> watchCategories() => _categoriesStream;
 
   Stream<List<StockMovement>> watchRestockMovements() =>
-      service.watchRestockMovements();
+      _restockMovementsStream;
 
-  Stream<List<StockMovement>> watchSalesMovements() =>
-      service.watchSalesMovements();
+  Stream<List<StockMovement>> watchSalesMovements() => _salesMovementsStream;
 
-  Stream<List<StockMovement>> watchOpnameMovements() =>
-      service.watchOpnameMovements();
+  Stream<List<StockMovement>> watchOpnameMovements() => _opnameMovementsStream;
 
   Future<void> saveProduct(Product product, {required bool isEdit}) async {
     _setLoading(true);

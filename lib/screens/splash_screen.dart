@@ -2,6 +2,8 @@ import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 
+import '../utils/app_theme.dart';
+
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
 
@@ -11,7 +13,7 @@ class SplashScreen extends StatefulWidget {
 
 class _SplashScreenState extends State<SplashScreen>
     with TickerProviderStateMixin {
-  static const _orange = Color(0xFFFF5A1F);
+  static const _brand = AppTheme.brandPrimary;
 
   late final AnimationController _floatController;
   late final AnimationController _fadeController;
@@ -39,7 +41,7 @@ class _SplashScreenState extends State<SplashScreen>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: _orange,
+      backgroundColor: _brand,
       body: SafeArea(
         child: FadeTransition(
           opacity: CurvedAnimation(
@@ -56,7 +58,8 @@ class _SplashScreenState extends State<SplashScreen>
                     builder: (context, child) {
                       final bob =
                           math.sin(_floatController.value * math.pi) * 12;
-                      final scale = 1 +
+                      final scale =
+                          1 +
                           (math.sin(_floatController.value * math.pi) * .03);
                       return Transform.translate(
                         offset: Offset(0, -bob),
@@ -64,14 +67,14 @@ class _SplashScreenState extends State<SplashScreen>
                       );
                     },
                     child: _SplashIllustration(
-                      assetPath: 'assets/images/splash_calculator.png',
+                      assetPath: 'assets/images/logo.png',
                     ),
                   ),
                 ),
               ),
               const SizedBox(height: 10),
               Text(
-                'Bakulan D Frozen',
+                'Bakulan POS',
                 textAlign: TextAlign.center,
                 style: Theme.of(context).textTheme.headlineMedium?.copyWith(
                   color: Colors.white,
@@ -81,7 +84,7 @@ class _SplashScreenState extends State<SplashScreen>
               ),
               const SizedBox(height: 6),
               Text(
-                'POS Frozen Food',
+                'Kasir dan stok dalam satu alur',
                 textAlign: TextAlign.center,
                 style: Theme.of(context).textTheme.titleMedium?.copyWith(
                   color: Colors.white.withValues(alpha: .82),
@@ -132,6 +135,7 @@ class _SplashIllustration extends StatelessWidget {
               child: Image.asset(
                 assetPath,
                 fit: BoxFit.contain,
+                cacheWidth: 560,
                 filterQuality: FilterQuality.medium,
                 errorBuilder: (context, error, stackTrace) {
                   return const Icon(

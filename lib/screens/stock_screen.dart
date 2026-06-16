@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import '../models/product.dart';
 import '../providers/auth_provider.dart';
 import '../providers/product_provider.dart';
+import '../utils/app_theme.dart';
 import '../widgets/empty_state.dart';
 import '../widgets/loading_indicator.dart';
 import '../widgets/product_tile.dart';
@@ -304,7 +305,7 @@ class _SuccessContent extends StatelessWidget {
           width: 34,
           height: 5,
           decoration: BoxDecoration(
-            color: const Color(0xFFE5E7EB),
+            color: AppTheme.brandBorder,
             borderRadius: BorderRadius.circular(999),
           ),
         ),
@@ -344,7 +345,7 @@ class _SuccessContent extends StatelessWidget {
         FilledButton(
           onPressed: onClose,
           style: FilledButton.styleFrom(
-            backgroundColor: const Color(0xFFFF5A1F),
+            backgroundColor: AppTheme.brandPrimary,
             foregroundColor: Colors.white,
             minimumSize: const Size.fromHeight(48),
           ),

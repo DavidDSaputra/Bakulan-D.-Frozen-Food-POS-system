@@ -24,27 +24,28 @@ class StatCard extends StatelessWidget {
         border: Border.all(color: scheme.outlineVariant.withValues(alpha: .36)),
         boxShadow: [
           BoxShadow(
-            color: scheme.shadow.withValues(alpha: .06),
-            offset: const Offset(0, 10),
-            blurRadius: 22,
+            color: scheme.shadow.withValues(alpha: .05),
+            offset: const Offset(0, 8),
+            blurRadius: 18,
           ),
         ],
       ),
       child: Padding(
-        padding: const EdgeInsets.all(14),
+        padding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
         child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Container(
-              width: 38,
-              height: 38,
+              width: 36,
+              height: 36,
               decoration: BoxDecoration(
                 color: color.withValues(alpha: .14),
                 borderRadius: BorderRadius.circular(12),
               ),
-              child: Icon(icon, color: color, size: 22),
+              child: Icon(icon, color: color, size: 20),
             ),
-            const Spacer(),
+            const SizedBox(height: 18),
             FittedBox(
               fit: BoxFit.scaleDown,
               alignment: Alignment.centerLeft,
@@ -56,7 +57,7 @@ class StatCard extends StatelessWidget {
                 ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w900),
               ),
             ),
-            const SizedBox(height: 3),
+            const SizedBox(height: 4),
             Text(
               title,
               maxLines: 1,
