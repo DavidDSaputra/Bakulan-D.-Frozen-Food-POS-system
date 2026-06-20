@@ -11,7 +11,10 @@ import '../utils/snackbar.dart';
 import '../widgets/empty_state.dart';
 import '../widgets/loading_indicator.dart';
 import '../widgets/stat_card.dart';
+import 'backup_export_screen.dart';
+import 'supplier_purchase_screen.dart';
 import 'transaction_detail_screen.dart';
+import 'transaction_history_screen.dart';
 
 enum ReportPeriod { daily, weekly, monthly, yearly, customDate }
 
@@ -93,6 +96,8 @@ class _ReportsScreenState extends State<ReportsScreen> {
         return ListView(
           padding: const EdgeInsets.fromLTRB(16, 6, 16, 24),
           children: [
+            const _OwnerToolsSection(),
+            const SizedBox(height: 14),
             _PeriodSelector(
               selected: _period,
               onChanged: (value) => setState(() => _period = value),
@@ -390,6 +395,82 @@ class _ReportsScreenState extends State<ReportsScreen> {
   }
 }
 
+class _OwnerToolsSection extends StatelessWidget {
+  const _OwnerToolsSection();
+
+  @override
+  Widget build(BuildContext context) {
+    final items = [
+      _ToolItem(
+        label: 'Invoice',
+        icon: Icons.receipt_long_rounded,
+        onTap: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (_) => const TransactionHistoryScreen()),
+          );
+        },
+      ),
+      _ToolItem(
+        label: 'Supplier',
+        icon: Icons.store_rounded,
+        onTap: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (_) => const SupplierPurchaseScreen()),
+          );
+        },
+      ),
+      _ToolItem(
+        label: 'Backup',
+        icon: Icons.download_rounded,
+        onTap: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (_) => const BackupExportScreen()),
+          );
+        },
+      ),
+    ];
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Menu Cepat',
+          style: Theme.of(
+            context,
+          ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w900),
+        ),
+        const SizedBox(height: 10),
+        LayoutBuilder(
+          builder: (context, constraints) {
+            const spacing = 8.0;
+            final columns = constraints.maxWidth >= 520 ? 4 : 2;
+            return Wrap(
+              spacing: spacing,
+              runSpacing: spacing,
+              children: [
+                for (var index = 0; index < items.length; index++)
+                  SizedBox(
+                    width: _responsiveItemWidth(
+                      index: index,
+                      itemCount: items.length,
+                      columns: columns,
+                      maxWidth: constraints.maxWidth,
+                      spacing: spacing,
+                    ),
+                    child: _ToolCard(item: items[index]),
+                  ),
+              ],
+            );
+          },
+        ),
+      ],
+    );
+  }
+}
+
 class _ReportRange {
   const _ReportRange({required this.start, required this.end});
 
@@ -425,6 +506,58 @@ class _PeriodOption {
   final ReportPeriod value;
   final String label;
   final IconData icon;
+}
+
+class _ToolItem {
+  const _ToolItem({
+    required this.label,
+    required this.icon,
+    required this.onTap,
+  });
+
+  final String label;
+  final IconData icon;
+  final VoidCallback onTap;
+}
+
+class _ToolCard extends StatelessWidget {
+  const _ToolCard({required this.item});
+
+  final _ToolItem item;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    return Material(
+      color: scheme.surfaceContainerLowest,
+      borderRadius: BorderRadius.circular(16),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(16),
+        onTap: item.onTap,
+        child: Container(
+          height: 78,
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(
+              color: scheme.outlineVariant.withValues(alpha: .4),
+            ),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Icon(item.icon, color: AppTheme.brandPrimary),
+              const Spacer(),
+              Text(
+                item.label,
+                style: const TextStyle(fontWeight: FontWeight.w900),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
 }
 
 class _PeriodSelector extends StatelessWidget {

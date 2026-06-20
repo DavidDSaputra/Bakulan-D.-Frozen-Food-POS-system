@@ -1,14 +1,19 @@
+import 'dart:ui';
+
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:provider/provider.dart';
 
+import '../models/app_user.dart';
 import '../models/product.dart';
 import '../models/sales_transaction.dart';
 import '../providers/auth_provider.dart';
 import '../providers/product_provider.dart';
 import '../providers/sales_provider.dart';
+import '../providers/theme_provider.dart';
 import '../utils/app_theme.dart';
 import '../utils/formatters.dart';
+import '../utils/snackbar.dart';
 import '../widgets/empty_state.dart';
 import '../widgets/loading_indicator.dart';
 import 'basket_screen.dart';
@@ -29,12 +34,12 @@ class DashboardScreen extends StatelessWidget {
         return StreamBuilder<List<SalesTransaction>>(
           stream: context.read<SalesProvider>().watchTransactions(limit: 120),
           builder: (context, trxSnapshot) {
-            if (!productSnapshot.hasData || !trxSnapshot.hasData) {
+            if (!productSnapshot.hasData) {
               return const AppLoadingIndicator();
             }
 
             final products = productSnapshot.data!;
-            final transactions = trxSnapshot.data!;
+            final transactions = trxSnapshot.data ?? const <SalesTransaction>[];
             final isOwner = user?.isOwner == true;
             final userName = user?.nama ?? 'Pengguna';
             final revenue = transactions.fold<int>(
@@ -43,6 +48,12 @@ class DashboardScreen extends StatelessWidget {
             );
             final lowStock = products
                 .where((product) => product.stok <= 5)
+                .length;
+            final expiredProducts = products
+                .where((product) => product.isExpired)
+                .length;
+            final expiringSoonProducts = products
+                .where((product) => product.isExpiringSoon)
                 .length;
             final totalStock = products.fold<int>(
               0,
@@ -68,40 +79,60 @@ class DashboardScreen extends StatelessWidget {
                 todayTransactions: todayTransactions,
                 lowStock: lowStock,
                 availableProducts: availableProducts,
+                expiringSoonProducts: expiringSoonProducts,
+                expiredProducts: expiredProducts,
                 transactions: transactions,
               );
             }
 
-            return ListView(
-              padding: const EdgeInsets.fromLTRB(16, 10, 16, 24),
+            return Stack(
               children: [
-                _StaggeredEntry(
-                  delay: const Duration(milliseconds: 40),
-                  child: _DashboardHero(
-                    name: userName,
-                    isOwner: isOwner,
-                    revenue: revenue,
-                  ),
+                ListView(
+                  padding: const EdgeInsets.fromLTRB(16, 10, 16, 24),
+                  children: [
+                    _StaggeredEntry(
+                      delay: const Duration(milliseconds: 40),
+                      child: _DashboardHero(
+                        name: userName,
+                        isOwner: isOwner,
+                        revenue: revenue,
+                      ),
+                    ),
+                    const SizedBox(height: 14),
+                    _StaggeredEntry(
+                      delay: const Duration(milliseconds: 120),
+                      child: _StatsGrid(
+                        isOwner: isOwner,
+                        transactions: transactions.length,
+                        products: products.length,
+                        lowStock: lowStock,
+                        totalStock: totalStock,
+                      ),
+                    ),
+                    const SizedBox(height: 14),
+                    _StaggeredEntry(
+                      delay: const Duration(milliseconds: 180),
+                      child: _InventoryAlertPanel(
+                        lowStock: lowStock,
+                        expiringSoon: expiringSoonProducts,
+                        expired: expiredProducts,
+                      ),
+                    ),
+                    const SizedBox(height: 22),
+                    if (isOwner)
+                      _StaggeredEntry(
+                        delay: const Duration(milliseconds: 220),
+                        child: _RecentTransactions(transactions: transactions),
+                      )
+                    else
+                      const SizedBox.shrink(),
+                  ],
                 ),
-                const SizedBox(height: 14),
-                _StaggeredEntry(
-                  delay: const Duration(milliseconds: 120),
-                  child: _StatsGrid(
-                    isOwner: isOwner,
-                    transactions: transactions.length,
-                    products: products.length,
-                    lowStock: lowStock,
-                    totalStock: totalStock,
-                  ),
+                const Positioned(
+                  top: 12,
+                  right: 16,
+                  child: _HomeAssistiveMenu(),
                 ),
-                const SizedBox(height: 22),
-                if (isOwner)
-                  _StaggeredEntry(
-                    delay: const Duration(milliseconds: 220),
-                    child: _RecentTransactions(transactions: transactions),
-                  )
-                else
-                  const SizedBox.shrink(),
               ],
             );
           },
@@ -117,6 +148,8 @@ class _CashierDashboard extends StatelessWidget {
     required this.todayTransactions,
     required this.lowStock,
     required this.availableProducts,
+    required this.expiringSoonProducts,
+    required this.expiredProducts,
     required this.transactions,
   });
 
@@ -124,22 +157,35 @@ class _CashierDashboard extends StatelessWidget {
   final int todayTransactions;
   final int lowStock;
   final int availableProducts;
+  final int expiringSoonProducts;
+  final int expiredProducts;
   final List<SalesTransaction> transactions;
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: AppTheme.brandSurface,
-      body: ListView(
+    return ColoredBox(
+      color: AppTheme.brandSurface,
+      child: ListView(
         padding: EdgeInsets.zero,
         children: [
           _CashierHeader(name: name),
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
-            child: _CashierSummary(
-              todayTransactions: todayTransactions,
-              lowStock: lowStock,
-              availableProducts: availableProducts,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _CashierSummary(
+                  todayTransactions: todayTransactions,
+                  lowStock: lowStock,
+                  availableProducts: availableProducts,
+                ),
+                const SizedBox(height: 16),
+                _InventoryAlertPanel(
+                  lowStock: lowStock,
+                  expiringSoon: expiringSoonProducts,
+                  expired: expiredProducts,
+                ),
+              ],
             ),
           ),
           const SizedBox(height: 16),
@@ -172,34 +218,35 @@ class _CashierHeader extends StatelessWidget {
     final dateLabel = AppFormatters.date(DateTime.now()).split(',').first;
 
     return SizedBox(
-      height: 292,
+      height: 296,
       child: Stack(
         clipBehavior: Clip.none,
         children: [
           Container(
-            height: 252,
+            height: 296,
             decoration: const BoxDecoration(
               color: _orange,
               borderRadius: BorderRadius.only(
-                bottomLeft: Radius.circular(24),
-                bottomRight: Radius.circular(24),
+                bottomLeft: Radius.circular(28),
+                bottomRight: Radius.circular(28),
               ),
             ),
           ),
           SafeArea(
             bottom: false,
             child: Padding(
-              padding: const EdgeInsets.fromLTRB(20, 18, 20, 0),
+              padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
               child: Column(
                 children: [
                   Row(
+                    crossAxisAlignment: CrossAxisAlignment.center,
                     children: [
                       Container(
-                        width: 48,
-                        height: 48,
+                        width: 52,
+                        height: 52,
                         decoration: BoxDecoration(
                           color: Colors.white,
-                          borderRadius: BorderRadius.circular(14),
+                          borderRadius: BorderRadius.circular(16),
                         ),
                         child: Center(
                           child: Text(
@@ -217,127 +264,615 @@ class _CashierHeader extends StatelessWidget {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            const Text(
-                              'Hello,',
-                              style: TextStyle(
-                                color: _text,
-                                fontSize: 12,
-                                fontWeight: FontWeight.w800,
-                              ),
-                            ),
-                            const SizedBox(height: 2),
                             Text(
                               name,
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
                               style: const TextStyle(
                                 color: Colors.white,
-                                fontSize: 20,
+                                fontSize: 22,
                                 fontWeight: FontWeight.w900,
                                 letterSpacing: 0,
+                              ),
+                            ),
+                            const SizedBox(height: 3),
+                            Text(
+                              'Petugas kasir',
+                              style: TextStyle(
+                                color: Colors.white.withValues(alpha: .72),
+                                fontSize: 12,
+                                fontWeight: FontWeight.w700,
                               ),
                             ),
                           ],
                         ),
                       ),
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 10,
-                          vertical: 6,
-                        ),
-                        decoration: BoxDecoration(
-                          color: Colors.white.withValues(alpha: .16),
-                          borderRadius: BorderRadius.circular(999),
-                        ),
-                        child: const Text(
-                          'Kasir',
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontWeight: FontWeight.w800,
-                            fontSize: 12,
-                          ),
-                        ),
-                      ),
+                      const SizedBox(width: 12),
+                      const _HomeAssistiveMenu(onDarkHeader: true),
                     ],
                   ),
-                  const SizedBox(height: 18),
-                  Container(
-                    height: 46,
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Row(
-                      children: [
-                        const Icon(
-                          Icons.calendar_month_rounded,
-                          color: _orange,
-                        ),
-                        const SizedBox(width: 12),
-                        Text(
-                          dateLabel,
-                          style: const TextStyle(
-                            color: _text,
-                            fontWeight: FontWeight.w900,
+                  const SizedBox(height: 16),
+                  Align(
+                    alignment: Alignment.centerLeft,
+                    child: Container(
+                      height: 44,
+                      padding: const EdgeInsets.fromLTRB(12, 0, 16, 0),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(14),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Container(
+                            width: 28,
+                            height: 28,
+                            decoration: BoxDecoration(
+                              color: AppTheme.brandTint,
+                              borderRadius: BorderRadius.circular(9),
+                            ),
+                            child: const Icon(
+                              Icons.calendar_month_rounded,
+                              color: _orange,
+                              size: 17,
+                            ),
                           ),
-                        ),
-                      ],
+                          const SizedBox(width: 12),
+                          Text(
+                            dateLabel,
+                            style: const TextStyle(
+                              color: _text,
+                              fontWeight: FontWeight.w900,
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
                   ),
-                  const SizedBox(height: 14),
-                  Container(
-                    height: 112,
-                    width: double.infinity,
-                    padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
-                    decoration: BoxDecoration(
-                      color: AppTheme.brandTint,
-                      borderRadius: BorderRadius.circular(14),
-                    ),
-                    child: Row(
-                      children: [
-                        Image.asset(
-                          'assets/images/logo.png',
-                          width: 78,
-                          cacheWidth: 180,
-                          fit: BoxFit.contain,
-                        ),
-                        const SizedBox(width: 12),
-                        const Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.end,
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Text(
-                                'Kasir Praktis',
-                                textAlign: TextAlign.right,
-                                style: TextStyle(
-                                  color: AppTheme.brandInk,
-                                  fontSize: 17,
-                                  fontWeight: FontWeight.w900,
-                                ),
-                              ),
-                              SizedBox(height: 4),
-                              Text(
-                                'Fokus ke penjualan, keranjang, dan transaksi terbaru.',
-                                textAlign: TextAlign.right,
-                                style: TextStyle(
-                                  color: AppTheme.brandMuted,
-                                  fontSize: 12,
-                                  height: 1.25,
-                                  fontWeight: FontWeight.w700,
-                                ),
-                              ),
-                            ],
+                  const SizedBox(height: 24),
+                  Center(
+                    child: ConstrainedBox(
+                      constraints: const BoxConstraints(maxWidth: 620),
+                      child: Container(
+                        height: 96,
+                        width: double.infinity,
+                        padding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withValues(alpha: .12),
+                          borderRadius: BorderRadius.circular(18),
+                          border: Border.all(
+                            color: Colors.white.withValues(alpha: .22),
                           ),
                         ),
-                      ],
+                        child: Row(
+                          children: [
+                            Container(
+                              width: 72,
+                              height: 72,
+                              padding: const EdgeInsets.all(10),
+                              decoration: BoxDecoration(
+                                color: Colors.white.withValues(alpha: .68),
+                                borderRadius: BorderRadius.circular(16),
+                              ),
+                              child: Image.asset(
+                                'assets/images/logo.png',
+                                cacheWidth: 160,
+                                fit: BoxFit.contain,
+                              ),
+                            ),
+                            const SizedBox(width: 14),
+                            const Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Text(
+                                    'Kasir Praktis',
+                                    style: TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 18,
+                                      fontWeight: FontWeight.w900,
+                                    ),
+                                  ),
+                                  SizedBox(height: 6),
+                                  Text(
+                                    'Fokus ke penjualan, keranjang, dan transaksi terbaru.',
+                                    maxLines: 2,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: TextStyle(
+                                      color: Colors.white70,
+                                      fontSize: 12,
+                                      height: 1.28,
+                                      fontWeight: FontWeight.w700,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
                     ),
                   ),
                 ],
               ),
             ),
           ),
+        ],
+      ),
+    );
+  }
+}
+
+class _HomeAssistiveMenu extends StatefulWidget {
+  const _HomeAssistiveMenu({this.onDarkHeader = false});
+
+  final bool onDarkHeader;
+
+  @override
+  State<_HomeAssistiveMenu> createState() => _HomeAssistiveMenuState();
+}
+
+class _HomeAssistiveMenuState extends State<_HomeAssistiveMenu>
+    with SingleTickerProviderStateMixin {
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    final buttonColor = widget.onDarkHeader
+        ? Colors.white.withValues(alpha: .16)
+        : AppTheme.brandPrimary;
+    final foreground = Colors.white;
+
+    return SizedBox(
+      width: 48,
+      height: 48,
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          color: buttonColor,
+          shape: BoxShape.circle,
+          border: Border.all(
+            color: widget.onDarkHeader
+                ? Colors.white.withValues(alpha: .18)
+                : scheme.outlineVariant.withValues(alpha: .36),
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: .12),
+              blurRadius: 12,
+              offset: const Offset(0, 5),
+            ),
+          ],
+        ),
+        child: Material(
+          color: Colors.transparent,
+          shape: const CircleBorder(),
+          child: InkWell(
+            customBorder: const CircleBorder(),
+            onTap: () => _openPowerMenu(context),
+            child: Icon(Icons.apps_rounded, color: foreground, size: 23),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Future<void> _openPowerMenu(BuildContext context) {
+    return showGeneralDialog<void>(
+      context: context,
+      barrierDismissible: true,
+      barrierLabel: 'Tutup menu',
+      barrierColor: Colors.transparent,
+      transitionDuration: const Duration(milliseconds: 280),
+      pageBuilder: (dialogContext, animation, secondaryAnimation) {
+        return _AssistivePowerMenu(
+          onInfoCashier: () {
+            Navigator.of(dialogContext).pop();
+            _showCashierInfoSheet(context);
+          },
+          onToggleTheme: () {
+            Navigator.of(dialogContext).pop();
+            context.read<ThemeProvider>().toggleTheme();
+          },
+          onLogout: () async {
+            Navigator.of(dialogContext).pop();
+            await context.read<AuthProvider>().logout();
+            if (context.mounted) {
+              showAppSnackBar(context, 'Logout berhasil');
+            }
+          },
+        );
+      },
+      transitionBuilder: (context, animation, secondaryAnimation, child) {
+        final curved = CurvedAnimation(
+          parent: animation,
+          curve: Curves.easeOutCubic,
+          reverseCurve: Curves.easeInCubic,
+        );
+        return FadeTransition(
+          opacity: curved,
+          child: ScaleTransition(
+            scale: Tween<double>(begin: .92, end: 1).animate(curved),
+            child: child,
+          ),
+        );
+      },
+    );
+  }
+
+  void _showCashierInfoSheet(BuildContext context) {
+    showModalBottomSheet<void>(
+      context: context,
+      showDragHandle: true,
+      builder: (context) => const _CashierInfoSheet(),
+    );
+  }
+}
+
+class _AssistivePowerMenu extends StatelessWidget {
+  const _AssistivePowerMenu({
+    required this.onInfoCashier,
+    required this.onToggleTheme,
+    required this.onLogout,
+  });
+
+  final VoidCallback onInfoCashier;
+  final VoidCallback onToggleTheme;
+  final Future<void> Function() onLogout;
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.transparent,
+      child: BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
+        child: ColoredBox(
+          color: Colors.black.withValues(alpha: .26),
+          child: SafeArea(
+            child: Stack(
+              children: [
+                Positioned.fill(
+                  child: GestureDetector(
+                    behavior: HitTestBehavior.opaque,
+                    onTap: () => Navigator.of(context).pop(),
+                  ),
+                ),
+                Align(
+                  alignment: Alignment.topCenter,
+                  child: Padding(
+                    padding: const EdgeInsets.only(top: 54),
+                    child: Container(
+                      width: 176,
+                      padding: const EdgeInsets.fromLTRB(16, 12, 16, 14),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF37262C).withValues(alpha: .96),
+                        borderRadius: BorderRadius.circular(22),
+                        border: Border.all(
+                          color: Colors.white.withValues(alpha: .08),
+                        ),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withValues(alpha: .28),
+                            blurRadius: 28,
+                            offset: const Offset(0, 14),
+                          ),
+                        ],
+                      ),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Container(
+                                width: 20,
+                                height: 20,
+                                decoration: BoxDecoration(
+                                  color: Colors.white,
+                                  borderRadius: BorderRadius.circular(5),
+                                ),
+                              ),
+                              const SizedBox(width: 3),
+                              Container(
+                                width: 6,
+                                height: 6,
+                                decoration: const BoxDecoration(
+                                  color: Colors.white,
+                                  shape: BoxShape.circle,
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 12),
+                          GridView.count(
+                            crossAxisCount: 2,
+                            mainAxisSpacing: 12,
+                            crossAxisSpacing: 12,
+                            childAspectRatio: .98,
+                            shrinkWrap: true,
+                            physics: const NeverScrollableScrollPhysics(),
+                            children: [
+                              _AssistiveGridItem(
+                                label: 'Info Kasir',
+                                icon: Icons.groups_rounded,
+                                onTap: onInfoCashier,
+                              ),
+                              _AssistiveGridItem(
+                                label: 'Tema',
+                                icon: Icons.dark_mode_rounded,
+                                onTap: onToggleTheme,
+                              ),
+                              _AssistiveGridItem(
+                                label: 'Logout',
+                                icon: Icons.logout_rounded,
+                                danger: true,
+                                onTap: onLogout,
+                              ),
+                              _AssistiveGridItem(
+                                label: 'Tutup',
+                                icon: Icons.close_rounded,
+                                onTap: () => Navigator.of(context).pop(),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 8),
+                          Container(
+                            width: 18,
+                            height: 18,
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              border: Border.all(
+                                color: Colors.white.withValues(alpha: .72),
+                                width: 1.6,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _AssistiveGridItem extends StatelessWidget {
+  const _AssistiveGridItem({
+    required this.label,
+    required this.icon,
+    required this.onTap,
+    this.danger = false,
+  });
+
+  final String label;
+  final IconData icon;
+  final VoidCallback onTap;
+  final bool danger;
+
+  @override
+  Widget build(BuildContext context) {
+    final color = danger ? const Color(0xFFFF7A7A) : Colors.white;
+
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(14),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(icon, color: color, size: 27),
+            const SizedBox(height: 7),
+            Text(
+              label,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                color: color.withValues(alpha: .88),
+                fontSize: 10,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _CashierInfoSheet extends StatelessWidget {
+  const _CashierInfoSheet();
+
+  @override
+  Widget build(BuildContext context) {
+    return SafeArea(
+      child: StreamBuilder<List<AppUser>>(
+        stream: context.read<AuthProvider>().watchUsers(),
+        builder: (context, snapshot) {
+          if (snapshot.hasError) {
+            return const Padding(
+              padding: EdgeInsets.fromLTRB(20, 0, 20, 24),
+              child: _SheetErrorMessage(),
+            );
+          }
+
+          if (!snapshot.hasData) {
+            return const SizedBox(height: 180, child: AppLoadingIndicator());
+          }
+
+          final cashiers = snapshot.data!.where((user) => user.isKasir).toList()
+            ..sort((a, b) => a.nama.compareTo(b.nama));
+
+          return Padding(
+            padding: const EdgeInsets.fromLTRB(20, 0, 20, 24),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        'Info Kasir',
+                        style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                          fontWeight: FontWeight.w900,
+                        ),
+                      ),
+                    ),
+                    _CashierCountBadge(count: cashiers.length),
+                  ],
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  'Daftar akun kasir yang terdaftar di POS.',
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                const SizedBox(height: 16),
+                if (cashiers.isEmpty)
+                  const EmptyState(
+                    icon: Icons.point_of_sale_rounded,
+                    title: 'Belum ada kasir',
+                    subtitle: 'Akun kasir yang dibuat akan tampil di sini.',
+                  )
+                else
+                  Flexible(
+                    child: ListView.separated(
+                      shrinkWrap: true,
+                      itemCount: cashiers.length,
+                      separatorBuilder: (_, _) => const SizedBox(height: 10),
+                      itemBuilder: (context, index) {
+                        return _CashierInfoTile(user: cashiers[index]);
+                      },
+                    ),
+                  ),
+              ],
+            ),
+          );
+        },
+      ),
+    );
+  }
+}
+
+class _SheetErrorMessage extends StatelessWidget {
+  const _SheetErrorMessage();
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Icon(Icons.lock_outline_rounded, color: scheme.error, size: 34),
+        const SizedBox(height: 12),
+        Text(
+          'Info kasir belum bisa dibuka',
+          style: Theme.of(
+            context,
+          ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w900),
+        ),
+        const SizedBox(height: 6),
+        Text(
+          'Rules lokal sudah disiapkan. Publish firestore.rules ke Firebase Console agar akun login bisa membaca collection users.',
+          textAlign: TextAlign.center,
+          style: TextStyle(
+            color: scheme.onSurfaceVariant,
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _CashierCountBadge extends StatelessWidget {
+  const _CashierCountBadge({required this.count});
+
+  final int count;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      decoration: BoxDecoration(
+        color: AppTheme.brandTint,
+        borderRadius: BorderRadius.circular(999),
+      ),
+      child: Text(
+        '$count kasir',
+        style: const TextStyle(
+          color: AppTheme.brandPrimary,
+          fontWeight: FontWeight.w900,
+          fontSize: 12,
+        ),
+      ),
+    );
+  }
+}
+
+class _CashierInfoTile extends StatelessWidget {
+  const _CashierInfoTile({required this.user});
+
+  final AppUser user;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    final initial = user.nama.trim().isNotEmpty
+        ? user.nama.trim()[0].toUpperCase()
+        : 'K';
+
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: scheme.surfaceContainerLowest,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: scheme.outlineVariant.withValues(alpha: .4)),
+      ),
+      child: Row(
+        children: [
+          CircleAvatar(
+            backgroundColor: AppTheme.brandTint,
+            foregroundColor: AppTheme.brandPrimary,
+            child: Text(
+              initial,
+              style: const TextStyle(fontWeight: FontWeight.w900),
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  user.nama,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(fontWeight: FontWeight.w900),
+                ),
+                const SizedBox(height: 3),
+                Text(
+                  user.username,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    color: scheme.onSurfaceVariant,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 10),
+          const Icon(Icons.point_of_sale_rounded, color: AppTheme.brandPrimary),
         ],
       ),
     );
@@ -973,6 +1508,129 @@ class _CashierRecentTransactions extends StatelessWidget {
   }
 }
 
+class _InventoryAlertPanel extends StatelessWidget {
+  const _InventoryAlertPanel({
+    required this.lowStock,
+    required this.expiringSoon,
+    required this.expired,
+  });
+
+  final int lowStock;
+  final int expiringSoon;
+  final int expired;
+
+  @override
+  Widget build(BuildContext context) {
+    final items = [
+      _AlertData(
+        title: 'Stok tipis',
+        value: '$lowStock',
+        icon: Icons.inventory_2_outlined,
+        color: const Color(0xFFE69A26),
+      ),
+      _AlertData(
+        title: 'Segera kedaluwarsa',
+        value: '$expiringSoon',
+        icon: Icons.event_available_rounded,
+        color: const Color(0xFF1976D2),
+      ),
+      _AlertData(
+        title: 'Sudah kedaluwarsa',
+        value: '$expired',
+        icon: Icons.warning_amber_rounded,
+        color: const Color(0xFFD93C2F),
+      ),
+    ];
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Alert Persediaan',
+          style: Theme.of(
+            context,
+          ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w900),
+        ),
+        const SizedBox(height: 10),
+        LayoutBuilder(
+          builder: (context, constraints) {
+            const spacing = 10.0;
+            final columns = constraints.maxWidth >= 620 ? 3 : 2;
+            return Wrap(
+              spacing: spacing,
+              runSpacing: spacing,
+              children: [
+                for (var index = 0; index < items.length; index++)
+                  SizedBox(
+                    width: _cashierAdaptiveItemWidth(
+                      index: index,
+                      itemCount: items.length,
+                      columns: columns,
+                      maxWidth: constraints.maxWidth,
+                      spacing: spacing,
+                    ),
+                    height: 118,
+                    child: _AlertCard(data: items[index]),
+                  ),
+              ],
+            );
+          },
+        ),
+      ],
+    );
+  }
+}
+
+class _AlertCard extends StatelessWidget {
+  const _AlertCard({required this.data});
+
+  final _AlertData data;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: scheme.surfaceContainerLowest,
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: scheme.outlineVariant.withValues(alpha: .28)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            width: 36,
+            height: 36,
+            decoration: BoxDecoration(
+              color: data.color.withValues(alpha: .12),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Icon(data.icon, color: data.color, size: 18),
+          ),
+          const Spacer(),
+          Text(
+            data.value,
+            style: Theme.of(
+              context,
+            ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w900),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            data.title,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+              color: scheme.onSurfaceVariant,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 class _RecentTransactions extends StatelessWidget {
   const _RecentTransactions({required this.transactions});
 
@@ -1189,6 +1847,20 @@ class _StaggeredEntryState extends State<_StaggeredEntry>
 
 class _StatData {
   const _StatData({
+    required this.title,
+    required this.value,
+    required this.icon,
+    required this.color,
+  });
+
+  final String title;
+  final String value;
+  final IconData icon;
+  final Color color;
+}
+
+class _AlertData {
+  const _AlertData({
     required this.title,
     required this.value,
     required this.icon,

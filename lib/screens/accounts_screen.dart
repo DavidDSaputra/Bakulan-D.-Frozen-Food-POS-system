@@ -8,6 +8,7 @@ import '../utils/snackbar.dart';
 import '../utils/validators.dart';
 import '../widgets/empty_state.dart';
 import '../widgets/loading_indicator.dart';
+import 'activity_log_screen.dart';
 
 class AccountsScreen extends StatefulWidget {
   const AccountsScreen({super.key});
@@ -204,6 +205,19 @@ class _AccountsScreenState extends State<AccountsScreen> {
                 totalUsers: users.length,
                 ownerCount: ownerCount,
                 kasirCount: kasirCount,
+              ),
+              const SizedBox(height: 18),
+              FilledButton.tonalIcon(
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => const ActivityLogScreen(),
+                    ),
+                  );
+                },
+                icon: const Icon(Icons.history_rounded),
+                label: const Text('Lihat Log Aktivitas'),
               ),
               const SizedBox(height: 18),
               Text(

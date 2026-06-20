@@ -6,7 +6,6 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../models/app_user.dart';
 import '../providers/auth_provider.dart';
 import '../providers/theme_provider.dart';
-import '../services/seed_data.dart';
 import '../utils/app_theme.dart';
 import '../utils/snackbar.dart';
 import 'accounts_screen.dart';
@@ -28,36 +27,13 @@ class AppShell extends StatefulWidget {
 class _AppShellState extends State<AppShell> {
   static const _dashboardGuideSeenKey = 'dashboard_guide_seen_v1';
 
-  late final PageController _pageController;
   int _selectedIndex = 0;
+  final Set<int> _visitedIndexes = {0};
 
   @override
   void initState() {
     super.initState();
-    _pageController = PageController();
     _showFirstLoginGuide();
-    _seedDataOnce();
-  }
-
-  Future<void> _seedDataOnce() async {
-    final prefs = await SharedPreferences.getInstance();
-    const seedVersion = 2;
-    final currentVersion = prefs.getInt('frozen_food_seed_version') ?? 0;
-
-    if (currentVersion < seedVersion) {
-      try {
-        await SeedDataService.seedFrozenFoodProducts();
-        await prefs.setInt('frozen_food_seed_version', seedVersion);
-      } catch (e) {
-        // Seeding error handled silently
-      }
-    }
-  }
-
-  @override
-  void dispose() {
-    _pageController.dispose();
-    super.dispose();
   }
 
   Future<void> _showFirstLoginGuide() async {
@@ -113,10 +89,12 @@ class _AppShellState extends State<AppShell> {
 
     if (_selectedIndex >= tabs.length) {
       _selectedIndex = 0;
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (_pageController.hasClients) _pageController.jumpToPage(0);
-      });
+      _visitedIndexes
+        ..clear()
+        ..add(0);
     }
+    _visitedIndexes.removeWhere((index) => index >= tabs.length);
+    _visitedIndexes.add(_selectedIndex);
     final scheme = Theme.of(context).colorScheme;
 
     final hideBar = tabs[_selectedIndex].hideShellBar;
@@ -190,11 +168,14 @@ class _AppShellState extends State<AppShell> {
                 ),
               ],
             ),
-      body: PageView.builder(
-        controller: _pageController,
-        itemCount: tabs.length,
-        onPageChanged: (index) => setState(() => _selectedIndex = index),
-        itemBuilder: (context, index) => tabs[index].screen,
+      body: IndexedStack(
+        index: _selectedIndex,
+        children: List.generate(tabs.length, (index) {
+          if (!_visitedIndexes.contains(index)) {
+            return const SizedBox.shrink();
+          }
+          return tabs[index].screen;
+        }),
       ),
       bottomNavigationBar: _ShellNavBar(
         tabs: tabs,
@@ -205,21 +186,12 @@ class _AppShellState extends State<AppShell> {
   }
 
   Future<void> _selectTab(int index, {bool animated = true}) async {
-    if (index == _selectedIndex && _pageController.hasClients) return;
-
-    setState(() => _selectedIndex = index);
-    if (!_pageController.hasClients) return;
-
-    if (!animated) {
-      _pageController.jumpToPage(index);
-      return;
-    }
-
-    await _pageController.animateToPage(
-      index,
-      duration: const Duration(milliseconds: 360),
-      curve: Curves.easeInOutCubicEmphasized,
-    );
+    if (index == _selectedIndex) return;
+    if (!mounted) return;
+    setState(() {
+      _selectedIndex = index;
+      _visitedIndexes.add(index);
+    });
   }
 }
 
