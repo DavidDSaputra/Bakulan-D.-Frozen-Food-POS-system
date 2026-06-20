@@ -55,15 +55,24 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
     );
 
     if (confirmed != true || !mounted) return;
+    final actor = context.read<AuthProvider>().user;
+    if (actor == null) {
+      showAppSnackBar(context, 'Sesi pengguna tidak ditemukan', isError: true);
+      return;
+    }
 
     try {
-      await context.read<ProductProvider>().deleteProduct(product.id);
+      await context.read<ProductProvider>().deleteProduct(product, actor);
       if (!mounted) return;
       Navigator.pop(context);
       showAppSnackBar(context, 'Barang berhasil dihapus');
-    } catch (_) {
+    } catch (error) {
       if (mounted) {
-        showAppSnackBar(context, 'Gagal menghapus barang', isError: true);
+        showAppSnackBar(
+          context,
+          error.toString().replaceAll('Exception: ', ''),
+          isError: true,
+        );
       }
     }
   }
@@ -80,7 +89,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
         foregroundColor: _orange,
         titleSpacing: 0,
         title: const Text(
-          'Product Details',
+          'Detail Barang',
           style: TextStyle(fontWeight: FontWeight.w900, color: _orange),
         ),
         actions: [
@@ -239,7 +248,7 @@ class _ProductInfoCard extends StatelessWidget {
             children: [
               const Expanded(
                 child: Text(
-                  'Product Information',
+                  'Informasi Barang',
                   style: TextStyle(
                     color: _ProductDetailScreenState._text,
                     fontWeight: FontWeight.w900,
@@ -276,14 +285,14 @@ class _ProductInfoCard extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 18),
-          _InfoRow(label: 'Name', value: product.namaBarang),
+          _InfoRow(label: 'Nama Barang', value: product.namaBarang),
           _InfoRow(
             label: 'Barcode',
             value: _readable(product.barcode, product.id),
           ),
-          _InfoRow(label: 'Quantity', value: '${product.stok}'),
+          _InfoRow(label: 'Stok', value: '${product.stok}'),
           _InfoRow(
-            label: 'Category',
+            label: 'Kategori',
             value: categoryName,
             valueBuilder: (value) => Align(
               alignment: Alignment.centerLeft,
@@ -305,20 +314,20 @@ class _ProductInfoCard extends StatelessWidget {
             ),
           ),
           _InfoRow(
-            label: 'Sale Price',
+            label: 'Harga Jual',
             value: AppFormatters.rupiah(product.hargaJual),
           ),
           _InfoRow(
-            label: 'Purchase Price',
+            label: 'Harga Modal',
             value: AppFormatters.rupiah(product.hargaBeli),
           ),
           _InfoRow(
-            label: 'Description',
+            label: 'Deskripsi',
             value: _readable(product.description, '-'),
             maxLines: 3,
           ),
           _InfoRow(
-            label: 'Expiration Date',
+            label: 'Tanggal Kedaluwarsa',
             value: _formatExpirationDate(product.expirationDate),
             showDivider: false,
           ),
@@ -334,7 +343,7 @@ class _ProductInfoCard extends StatelessWidget {
 
   static String _formatExpirationDate(DateTime? date) {
     if (date == null) return '-';
-    return '${date.month.toString().padLeft(2, '0')}/${date.year}';
+    return AppFormatters.fullDate(date);
   }
 }
 

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 class AppTextField extends StatelessWidget {
   const AppTextField({
@@ -11,6 +12,8 @@ class AppTextField extends StatelessWidget {
     this.obscureText = false,
     this.textInputAction,
     this.onChanged,
+    this.inputFormatters,
+    this.suffixIcon,
   });
 
   final TextEditingController controller;
@@ -21,6 +24,8 @@ class AppTextField extends StatelessWidget {
   final bool obscureText;
   final TextInputAction? textInputAction;
   final ValueChanged<String>? onChanged;
+  final List<TextInputFormatter>? inputFormatters;
+  final Widget? suffixIcon;
 
   @override
   Widget build(BuildContext context) {
@@ -31,9 +36,11 @@ class AppTextField extends StatelessWidget {
       obscureText: obscureText,
       textInputAction: textInputAction,
       onChanged: onChanged,
+      inputFormatters: inputFormatters,
       decoration: InputDecoration(
         labelText: label,
         prefixIcon: icon == null ? null : Icon(icon),
+        suffixIcon: suffixIcon,
       ),
     );
   }

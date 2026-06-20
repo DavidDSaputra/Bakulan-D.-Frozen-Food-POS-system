@@ -142,6 +142,46 @@ class ProductTile extends StatelessWidget {
                               ),
                             ),
                           ),
+                        if (product.isExpired)
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 10,
+                              vertical: 5,
+                            ),
+                            decoration: BoxDecoration(
+                              color: scheme.error.withValues(alpha: .12),
+                              borderRadius: BorderRadius.circular(999),
+                            ),
+                            child: Text(
+                              'Kedaluwarsa',
+                              style: TextStyle(
+                                color: scheme.error,
+                                fontSize: 12,
+                                fontWeight: FontWeight.w800,
+                              ),
+                            ),
+                          )
+                        else if (product.isExpiringSoon)
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 10,
+                              vertical: 5,
+                            ),
+                            decoration: BoxDecoration(
+                              color: const Color(
+                                0xFFE69A26,
+                              ).withValues(alpha: .12),
+                              borderRadius: BorderRadius.circular(999),
+                            ),
+                            child: const Text(
+                              'Segera kedaluwarsa',
+                              style: TextStyle(
+                                color: Color(0xFFE69A26),
+                                fontSize: 12,
+                                fontWeight: FontWeight.w800,
+                              ),
+                            ),
+                          ),
                       ],
                     ),
                   ],

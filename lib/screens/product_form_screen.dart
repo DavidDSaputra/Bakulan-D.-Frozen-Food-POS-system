@@ -7,12 +7,16 @@ import 'package:provider/provider.dart';
 import '../models/category.dart';
 import '../models/product.dart';
 import '../providers/product_provider.dart';
+import '../providers/auth_provider.dart';
 import '../services/cloudinary_service.dart';
 import '../utils/category_helpers.dart';
+import '../utils/formatters.dart';
+import '../utils/number_input_formatter.dart';
 import '../utils/snackbar.dart';
 import '../utils/validators.dart';
 import '../widgets/app_button.dart';
 import '../widgets/app_text_field.dart';
+import 'barcode_scanner_screen.dart';
 
 class ProductFormScreen extends StatefulWidget {
   const ProductFormScreen({super.key, this.product});
@@ -49,13 +53,13 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
     final product = widget.product;
     _nameController = TextEditingController(text: product?.namaBarang ?? '');
     _purchasePriceController = TextEditingController(
-      text: product == null ? '' : product.hargaBeli.toString(),
+      text: product == null ? '' : AppFormatters.number(product.hargaBeli),
     );
     _salePriceController = TextEditingController(
-      text: product == null ? '' : product.hargaJual.toString(),
+      text: product == null ? '' : AppFormatters.number(product.hargaJual),
     );
     _stockController = TextEditingController(
-      text: product == null ? '' : product.stok.toString(),
+      text: product == null ? '' : AppFormatters.number(product.stok),
     );
     _barcodeController = TextEditingController(text: product?.barcode ?? '');
     _descriptionController = TextEditingController(
@@ -87,13 +91,18 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
 
   Future<void> _save() async {
     if (!_formKey.currentState!.validate()) return;
+    final actor = context.read<AuthProvider>().user;
+    if (actor == null) {
+      showAppSnackBar(context, 'Sesi pengguna tidak ditemukan', isError: true);
+      return;
+    }
 
     final product = Product(
       id: widget.product?.id ?? '',
       namaBarang: _nameController.text.trim(),
-      hargaBeli: int.parse(_purchasePriceController.text.trim()),
-      harga: int.parse(_salePriceController.text.trim()),
-      stok: int.parse(_stockController.text.trim()),
+      hargaBeli: AppFormatters.parseNumberInput(_purchasePriceController.text)!,
+      harga: AppFormatters.parseNumberInput(_salePriceController.text)!,
+      stok: AppFormatters.parseNumberInput(_stockController.text)!,
       kategoriId: _selectedCategoryId ?? '',
       imageUrl: _imageUrlController.text.trim(),
       isActive: _isActive,
@@ -106,6 +115,7 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
       await context.read<ProductProvider>().saveProduct(
         product,
         isEdit: _isEdit,
+        actor: actor,
       );
       if (!mounted) return;
       showAppSnackBar(
@@ -113,9 +123,13 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
         _isEdit ? 'Barang berhasil diperbarui' : 'Barang berhasil ditambahkan',
       );
       Navigator.pop(context);
-    } catch (_) {
+    } catch (error) {
       if (mounted) {
-        showAppSnackBar(context, 'Gagal menyimpan barang', isError: true);
+        showAppSnackBar(
+          context,
+          error.toString().replaceAll('Exception: ', ''),
+          isError: true,
+        );
       }
     }
   }
@@ -127,7 +141,7 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
       initialDate: _expirationDate ?? now,
       firstDate: DateTime(now.year - 2),
       lastDate: DateTime(now.year + 20, 12, 31),
-      helpText: 'Pilih tanggal expired',
+      helpText: 'Pilih tanggal kedaluwarsa',
     );
     if (picked == null || !mounted) return;
 
@@ -146,7 +160,7 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
 
   String _formatExpirationDate(DateTime? date) {
     if (date == null) return '';
-    return '${date.month.toString().padLeft(2, '0')}/${date.year}';
+    return AppFormatters.fullDate(date);
   }
 
   Future<void> _pickAndUploadImage() async {
@@ -183,6 +197,15 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
     } finally {
       if (mounted) setState(() => _isUploadingImage = false);
     }
+  }
+
+  Future<void> _scanBarcode() async {
+    final result = await Navigator.push<String>(
+      context,
+      MaterialPageRoute(builder: (_) => const BarcodeScannerScreen()),
+    );
+    if (result == null || !mounted) return;
+    _barcodeController.text = result.trim();
   }
 
   @override
@@ -272,12 +295,13 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
                   const SizedBox(height: 14),
                   AppTextField(
                     controller: _purchasePriceController,
-                    label: 'Harga Beli',
+                    label: 'Harga Modal',
                     icon: Icons.shopping_bag_rounded,
                     keyboardType: TextInputType.number,
+                    inputFormatters: [ThousandSeparatorInputFormatter()],
                     validator: (value) => Validators.nonNegativeNumber(
                       value,
-                      field: 'Harga beli',
+                      field: 'Harga modal',
                     ),
                     textInputAction: TextInputAction.next,
                   ),
@@ -287,6 +311,7 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
                     label: 'Harga Jual',
                     icon: Icons.sell_rounded,
                     keyboardType: TextInputType.number,
+                    inputFormatters: [ThousandSeparatorInputFormatter()],
                     validator: (value) =>
                         Validators.positiveNumber(value, field: 'Harga jual'),
                     textInputAction: TextInputAction.next,
@@ -297,6 +322,7 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
                     label: 'Stok',
                     icon: Icons.inventory_rounded,
                     keyboardType: TextInputType.number,
+                    inputFormatters: [ThousandSeparatorInputFormatter()],
                     validator: (value) =>
                         Validators.nonNegativeNumber(value, field: 'Stok'),
                     textInputAction: TextInputAction.next,
@@ -307,6 +333,11 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
                     label: 'Barcode',
                     icon: Icons.qr_code_2_rounded,
                     keyboardType: TextInputType.text,
+                    suffixIcon: IconButton(
+                      tooltip: 'Scan barcode',
+                      onPressed: _scanBarcode,
+                      icon: const Icon(Icons.qr_code_scanner_rounded),
+                    ),
                     textInputAction: TextInputAction.next,
                   ),
                   const SizedBox(height: 14),
@@ -378,12 +409,12 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
                     readOnly: true,
                     onTap: _pickExpirationDate,
                     decoration: InputDecoration(
-                      labelText: 'Tanggal Expired',
+                      labelText: 'Tanggal Kedaluwarsa',
                       prefixIcon: const Icon(Icons.event_rounded),
                       suffixIcon: _expirationDate == null
                           ? const Icon(Icons.calendar_month_rounded)
                           : IconButton(
-                              tooltip: 'Kosongkan tanggal expired',
+                              tooltip: 'Kosongkan tanggal kedaluwarsa',
                               onPressed: _clearExpirationDate,
                               icon: const Icon(Icons.close_rounded),
                             ),

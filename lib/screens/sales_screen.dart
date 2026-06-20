@@ -13,6 +13,7 @@ import '../utils/formatters.dart';
 import '../utils/snackbar.dart';
 import '../widgets/empty_state.dart';
 import '../widgets/loading_indicator.dart';
+import 'barcode_scanner_screen.dart';
 import 'basket_screen.dart';
 import 'payment_screen.dart';
 import 'transaction_history_screen.dart';
@@ -122,6 +123,32 @@ class _SalesScreenState extends State<SalesScreen> {
     if (selected != null) setState(() => _sortMode = selected);
   }
 
+  Future<void> _openBarcodeScanner(List<Product> products) async {
+    final result = await Navigator.push<String>(
+      context,
+      MaterialPageRoute(builder: (_) => const BarcodeScannerScreen()),
+    );
+    if (result == null || !mounted) return;
+
+    final code = result.trim().toLowerCase();
+    final matched = products.where(
+      (product) => product.barcode.trim().toLowerCase() == code,
+    );
+
+    if (matched.isNotEmpty) {
+      _addToCart(matched.first);
+      showAppSnackBar(context, '${matched.first.namaBarang} ditambahkan');
+      return;
+    }
+
+    _searchController.text = result.trim();
+    setState(() {});
+    showAppSnackBar(
+      context,
+      'Barcode tidak ditemukan, hasil scan dimasukkan ke pencarian',
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final cart = context.watch<CartProvider>();
@@ -133,7 +160,7 @@ class _SalesScreenState extends State<SalesScreen> {
     return Scaffold(
       backgroundColor: scheme.surface,
       appBar: AppBar(
-        title: const Text('Sale Screen'),
+        title: const Text('Penjualan'),
         actions: [
           Padding(
             padding: const EdgeInsets.only(right: 10),
@@ -162,16 +189,17 @@ class _SalesScreenState extends State<SalesScreen> {
               return StreamBuilder<List<Product>>(
                 stream: context.read<ProductProvider>().watchActiveProducts(),
                 builder: (context, snapshot) {
-                  if (!snapshot.hasData || !trxSnapshot.hasData) {
+                  if (!snapshot.hasData) {
                     return const AppLoadingIndicator();
                   }
 
-                  final soldCounts = _soldCounts(trxSnapshot.data!);
+                  final soldCounts = _soldCounts(trxSnapshot.data ?? const []);
                   final query = _searchController.text.trim().toLowerCase();
                   final products = snapshot.data!
                       .where(
                         (product) =>
-                            product.namaBarang.toLowerCase().contains(query),
+                            product.namaBarang.toLowerCase().contains(query) ||
+                            product.barcode.toLowerCase().contains(query),
                       )
                       .where(
                         (product) =>
@@ -190,6 +218,7 @@ class _SalesScreenState extends State<SalesScreen> {
                           scheme: scheme,
                           onChanged: (_) => setState(() {}),
                           onFilter: _openSortSheet,
+                          onScan: () => _openBarcodeScanner(snapshot.data!),
                           onHistory: _openTransactionHistory,
                         ),
                       ),
@@ -358,6 +387,7 @@ class _SearchRow extends StatelessWidget {
     required this.scheme,
     required this.onChanged,
     required this.onFilter,
+    required this.onScan,
     required this.onHistory,
   });
 
@@ -365,6 +395,7 @@ class _SearchRow extends StatelessWidget {
   final ColorScheme scheme;
   final ValueChanged<String> onChanged;
   final VoidCallback onFilter;
+  final VoidCallback onScan;
   final VoidCallback onHistory;
 
   @override
@@ -417,6 +448,8 @@ class _SearchRow extends StatelessWidget {
         ),
         const SizedBox(width: 8),
         _SquareActionButton(icon: Icons.tune_rounded, onTap: onFilter),
+        const SizedBox(width: 8),
+        _SquareActionButton(icon: Icons.qr_code_scanner_rounded, onTap: onScan),
         const SizedBox(width: 8),
         _SquareActionButton(icon: Icons.history_rounded, onTap: onHistory),
       ],

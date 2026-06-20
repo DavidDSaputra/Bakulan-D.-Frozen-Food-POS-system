@@ -50,13 +50,22 @@ class _ProductsScreenState extends State<ProductsScreen> {
     );
 
     if (confirmed != true || !mounted) return;
+    final actor = context.read<AuthProvider>().user;
+    if (actor == null) {
+      showAppSnackBar(context, 'Sesi pengguna tidak ditemukan', isError: true);
+      return;
+    }
 
     try {
-      await context.read<ProductProvider>().deleteProduct(product.id);
+      await context.read<ProductProvider>().deleteProduct(product, actor);
       if (mounted) showAppSnackBar(context, 'Barang berhasil dihapus');
-    } catch (_) {
+    } catch (error) {
       if (mounted) {
-        showAppSnackBar(context, 'Gagal menghapus barang', isError: true);
+        showAppSnackBar(
+          context,
+          error.toString().replaceAll('Exception: ', ''),
+          isError: true,
+        );
       }
     }
   }

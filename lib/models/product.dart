@@ -31,6 +31,25 @@ class Product {
   int get margin => hargaJual - hargaBeli;
   bool get isOutOfStock => stok <= 0;
   bool get isLowStock => stok > 0 && stok <= 5;
+  bool get hasExpirationDate => expirationDate != null;
+  bool get isExpired {
+    final date = expirationDate;
+    if (date == null) return false;
+    final today = DateTime.now();
+    final boundary = DateTime(today.year, today.month, today.day);
+    final value = DateTime(date.year, date.month, date.day);
+    return value.isBefore(boundary);
+  }
+
+  bool get isExpiringSoon {
+    final date = expirationDate;
+    if (date == null) return false;
+    if (isExpired) return false;
+    final today = DateTime.now();
+    final boundary = DateTime(today.year, today.month, today.day);
+    final value = DateTime(date.year, date.month, date.day);
+    return value.difference(boundary).inDays <= 30;
+  }
 
   Product copyWith({
     String? id,
@@ -90,6 +109,7 @@ class Product {
   Map<String, dynamic> toMap() {
     return {
       'nama_barang': namaBarang,
+      'nama_barang_lower': namaBarang.trim().toLowerCase(),
       'harga': hargaJual,
       'harga_beli': hargaBeli,
       'harga_jual': hargaJual,

@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../models/category.dart';
 import '../models/product.dart';
 import '../models/stock_movement.dart';
+import '../models/app_user.dart';
 import '../services/firestore_service.dart';
 
 class ProductProvider extends ChangeNotifier {
@@ -11,49 +12,42 @@ class ProductProvider extends ChangeNotifier {
   bool _isLoading = false;
   bool get isLoading => _isLoading;
 
-  late final Stream<List<Product>> _productsStream = service.watchProducts();
-  late final Stream<List<Product>> _activeProductsStream = _productsStream.map(
-    (products) => products.where((product) => product.isActive).toList(),
-  );
-  late final Stream<List<ProductCategory>> _categoriesStream = service
-      .watchCategories();
-  late final Stream<List<StockMovement>> _restockMovementsStream = service
-      .watchRestockMovements();
-  late final Stream<List<StockMovement>> _salesMovementsStream = service
-      .watchSalesMovements();
-  late final Stream<List<StockMovement>> _opnameMovementsStream = service
-      .watchOpnameMovements();
+  Stream<List<Product>> watchProducts() => service.watchProducts();
 
-  Stream<List<Product>> watchProducts() => _productsStream;
+  Stream<List<Product>> watchActiveProducts() => service.watchActiveProducts();
 
-  Stream<List<Product>> watchActiveProducts() => _activeProductsStream;
-
-  Stream<List<ProductCategory>> watchCategories() => _categoriesStream;
+  Stream<List<ProductCategory>> watchCategories() => service.watchCategories();
 
   Stream<List<StockMovement>> watchRestockMovements() =>
-      _restockMovementsStream;
+      service.watchRestockMovements();
 
-  Stream<List<StockMovement>> watchSalesMovements() => _salesMovementsStream;
+  Stream<List<StockMovement>> watchSalesMovements() =>
+      service.watchSalesMovements();
 
-  Stream<List<StockMovement>> watchOpnameMovements() => _opnameMovementsStream;
+  Stream<List<StockMovement>> watchOpnameMovements() =>
+      service.watchOpnameMovements();
 
-  Future<void> saveProduct(Product product, {required bool isEdit}) async {
+  Future<void> saveProduct(
+    Product product, {
+    required bool isEdit,
+    required AppUser actor,
+  }) async {
     _setLoading(true);
     try {
       if (isEdit) {
-        await service.updateProduct(product);
+        await service.updateProduct(product: product, actor: actor);
       } else {
-        await service.addProduct(product);
+        await service.addProduct(product: product, actor: actor);
       }
     } finally {
       _setLoading(false);
     }
   }
 
-  Future<void> deleteProduct(String id) async {
+  Future<void> deleteProduct(Product product, AppUser actor) async {
     _setLoading(true);
     try {
-      await service.deleteProduct(id);
+      await service.deleteProduct(product: product, actor: actor);
     } finally {
       _setLoading(false);
     }
@@ -68,10 +62,10 @@ class ProductProvider extends ChangeNotifier {
     }
   }
 
-  Future<void> addStock(Product product, int qty, String userId) async {
+  Future<void> addStock(Product product, int qty, AppUser actor) async {
     _setLoading(true);
     try {
-      await service.addStock(product: product, qty: qty, userId: userId);
+      await service.addStock(product: product, qty: qty, actor: actor);
     } finally {
       _setLoading(false);
     }
@@ -81,7 +75,8 @@ class ProductProvider extends ChangeNotifier {
     Product product,
     int qty,
     String note,
-    String userId,
+    AppUser actor,
+    String proofUrl,
   ) async {
     _setLoading(true);
     try {
@@ -89,29 +84,35 @@ class ProductProvider extends ChangeNotifier {
         product: product,
         qty: qty,
         note: note,
-        userId: userId,
+        actor: actor,
+        proofUrl: proofUrl,
       );
     } finally {
       _setLoading(false);
     }
   }
 
-  Future<void> updateProductActive(String productId, bool isActive) async {
+  Future<void> updateProductActive(
+    Product product,
+    bool isActive,
+    AppUser actor,
+  ) async {
     _setLoading(true);
     try {
       await service.updateProductActive(
-        productId: productId,
+        product: product,
         isActive: isActive,
+        actor: actor,
       );
     } finally {
       _setLoading(false);
     }
   }
 
-  Future<void> restock(Product product, int qty, String userId) async {
+  Future<void> restock(Product product, int qty, AppUser actor) async {
     _setLoading(true);
     try {
-      await service.restockProduct(product: product, qty: qty, userId: userId);
+      await service.restockProduct(product: product, qty: qty, actor: actor);
     } finally {
       _setLoading(false);
     }
