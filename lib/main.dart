@@ -2,10 +2,12 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'package:provider/provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import 'firebase_options.dart';
 import 'providers/auth_provider.dart';
 import 'providers/cart_provider.dart';
+import 'providers/operations_provider.dart';
 import 'providers/product_provider.dart';
 import 'providers/sales_provider.dart';
 import 'providers/theme_provider.dart';
@@ -34,6 +36,7 @@ class BakulanApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => AuthProvider()..listenToUser()),
         ChangeNotifierProvider(create: (_) => ProductProvider()),
         ChangeNotifierProvider(create: (_) => SalesProvider()),
+        ChangeNotifierProvider(create: (_) => OperationsProvider()),
         ChangeNotifierProvider(create: (_) => CartProvider()),
       ],
       child: Consumer<ThemeProvider>(
@@ -60,15 +63,40 @@ class AuthGate extends StatefulWidget {
 }
 
 class _AuthGateState extends State<AuthGate> {
-  bool _showIntro = true;
+  static const _onboardingDoneKey = 'onboarding_done';
+
+  bool _isCheckingIntro = true;
+  bool _showIntro = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadIntroPreference();
+  }
+
+  Future<void> _loadIntroPreference() async {
+    final prefs = await SharedPreferences.getInstance();
+    final hasFinishedOnboarding = prefs.getBool(_onboardingDoneKey) ?? false;
+    if (!mounted) return;
+    setState(() {
+      _showIntro = !hasFinishedOnboarding;
+      _isCheckingIntro = false;
+    });
+  }
 
   Future<void> _finishOnboarding() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool(_onboardingDoneKey, true);
     if (!mounted) return;
     setState(() => _showIntro = false);
   }
 
   @override
   Widget build(BuildContext context) {
+    if (_isCheckingIntro) {
+      return const _AuthLoadingScreen();
+    }
+
     if (_showIntro) {
       return OnboardingScreen(onFinished: _finishOnboarding);
     }

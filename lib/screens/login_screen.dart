@@ -59,11 +59,11 @@ class _LoginScreenState extends State<LoginScreen>
         _passwordController.text,
       );
       if (mounted) showAppSnackBar(context, 'Login berhasil');
-    } catch (_) {
+    } catch (error) {
       if (mounted) {
         showAppSnackBar(
           context,
-          'Login gagal. Periksa username dan password.',
+          error.toString().replaceFirst('Exception: ', ''),
           isError: true,
         );
       }

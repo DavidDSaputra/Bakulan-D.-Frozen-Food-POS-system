@@ -13,6 +13,7 @@ class AuthProvider extends ChangeNotifier {
   final FlutterSecureStorage _secureStorage = const FlutterSecureStorage();
 
   StreamSubscription<AppUser?>? _subscription;
+  Timer? _checkingTimer;
   AppUser? _user;
   bool _isLoading = false;
   bool _isCheckingUser = true;
@@ -24,8 +25,32 @@ class AuthProvider extends ChangeNotifier {
   bool get isCheckingUser => _isCheckingUser;
 
   void listenToUser() {
-    _subscription ??= _authService.watchAppUser().listen((user) {
-      _user = user;
+    if (_subscription != null) return;
+
+    _subscription = _authService.watchAppUser().listen(
+      (user) {
+        _checkingTimer?.cancel();
+        _user = user;
+        _isCheckingUser = false;
+        notifyListeners();
+      },
+      onError: (_) {
+        _checkingTimer?.cancel();
+        _user = null;
+        _isCheckingUser = false;
+        notifyListeners();
+      },
+    );
+
+    if (!_authService.hasSignedInUser) {
+      _isCheckingUser = false;
+      Future.microtask(notifyListeners);
+      return;
+    }
+
+    _checkingTimer = Timer(const Duration(seconds: 3), () {
+      if (!_isCheckingUser) return;
+      _user = null;
       _isCheckingUser = false;
       notifyListeners();
     });
@@ -88,6 +113,10 @@ class AuthProvider extends ChangeNotifier {
     required String password,
     required UserRole role,
   }) async {
+    final actor = _user;
+    if (actor == null) {
+      throw Exception('Sesi pengguna tidak ditemukan');
+    }
     _isLoading = true;
     notifyListeners();
     try {
@@ -96,6 +125,7 @@ class AuthProvider extends ChangeNotifier {
         username: username,
         password: password,
         role: role,
+        actor: actor,
       );
     } finally {
       _isLoading = false;
@@ -104,7 +134,7 @@ class AuthProvider extends ChangeNotifier {
   }
 
   Future<void> logout() async {
-    await _authService.logout();
+    await _authService.logout(actor: _user);
     _user = null;
     notifyListeners();
   }
@@ -119,6 +149,7 @@ class AuthProvider extends ChangeNotifier {
 
   @override
   void dispose() {
+    _checkingTimer?.cancel();
     _subscription?.cancel();
     super.dispose();
   }

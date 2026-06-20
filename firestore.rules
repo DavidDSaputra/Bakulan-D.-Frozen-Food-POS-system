@@ -1,0 +1,96 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    function userProfile() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid));
+    }
+
+    function hasProfile() {
+      return signedIn() && exists(/databases/$(database)/documents/users/$(request.auth.uid));
+    }
+
+    function isOwner() {
+      return hasProfile() && userProfile().data.role == 'owner';
+    }
+
+    function isOwnUser(userId) {
+      return signedIn() && request.auth.uid == userId;
+    }
+
+    match /users/{userId} {
+      allow get, list: if signedIn();
+      allow create: if isOwnUser(userId) || isOwner();
+      allow update: if isOwnUser(userId) || isOwner();
+      allow delete: if isOwner();
+    }
+
+    match /kategori/{document=**} {
+      allow read: if signedIn();
+      allow write: if isOwner();
+    }
+
+    match /barang/{document=**} {
+      allow read: if signedIn();
+      allow create, delete: if isOwner();
+      allow update: if isOwner() || (
+        signedIn() &&
+        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['stok'])
+      );
+    }
+
+    match /transaksi/{document=**} {
+      allow read, create, update: if signedIn();
+      allow delete: if isOwner();
+    }
+
+    match /sales_invoices/{document=**} {
+      allow read, create, update: if signedIn();
+      allow delete: if isOwner();
+    }
+
+    match /cashier_shifts/{document=**} {
+      allow read, create, update: if signedIn();
+      allow delete: if isOwner();
+    }
+
+    match /barang_masuk/{document=**} {
+      allow read, create: if signedIn();
+      allow update, delete: if isOwner();
+    }
+
+    match /stok_opname_keluar/{document=**} {
+      allow read, create: if signedIn();
+      allow update, delete: if isOwner();
+    }
+
+    match /suppliers/{document=**} {
+      allow read: if signedIn();
+      allow write: if isOwner();
+    }
+
+    match /purchase_records/{document=**} {
+      allow read, create: if signedIn();
+      allow update, delete: if isOwner();
+    }
+
+    match /retur_transaksi/{document=**} {
+      allow read, create, update: if signedIn();
+      allow delete: if isOwner();
+    }
+
+    match /activity_logs/{document=**} {
+      allow read: if isOwner();
+      allow create: if signedIn();
+      allow update, delete: if false;
+    }
+
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

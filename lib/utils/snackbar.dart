@@ -72,7 +72,10 @@ class _TopToastState extends State<_TopToast>
     );
 
     _controller.forward();
-    _timer = Timer(const Duration(milliseconds: 1450), _close);
+    _timer = Timer(
+      Duration(milliseconds: widget.isError ? 3200 : 1450),
+      _close,
+    );
   }
 
   @override
@@ -93,7 +96,7 @@ class _TopToastState extends State<_TopToast>
     final scheme = Theme.of(context).colorScheme;
     final media = MediaQuery.of(context);
     final width = media.size.width;
-    final toastWidth = width < 390 ? width - 32 : 340.0;
+    final toastWidth = (width - 32).clamp(0, 520).toDouble();
     final top = media.padding.top + 12;
     final background = widget.isError ? scheme.error : AppTheme.brandPrimary;
     final foreground = widget.isError ? scheme.onError : Colors.white;
@@ -149,7 +152,7 @@ class _TopToastState extends State<_TopToast>
                       Flexible(
                         child: Text(
                           widget.message,
-                          maxLines: 1,
+                          maxLines: 3,
                           overflow: TextOverflow.ellipsis,
                           style: TextStyle(
                             color: foreground,
