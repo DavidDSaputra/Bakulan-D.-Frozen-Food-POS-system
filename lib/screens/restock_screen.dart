@@ -4,6 +4,8 @@ import 'package:provider/provider.dart';
 import '../models/product.dart';
 import '../providers/auth_provider.dart';
 import '../providers/product_provider.dart';
+import '../utils/formatters.dart';
+import '../utils/number_input_formatter.dart';
 import '../utils/snackbar.dart';
 import '../utils/validators.dart';
 import '../widgets/app_button.dart';
@@ -62,19 +64,23 @@ class _RestockFormState extends State<_RestockForm> {
       return;
     }
 
-    final qty = int.tryParse(_qtyController.text.trim()) ?? 0;
+    final qty = AppFormatters.parseNumberInput(_qtyController.text) ?? 0;
     if (qty <= 0) {
       showAppSnackBar(context, 'Qty harus lebih dari 0', isError: true);
       return;
     }
+    final actor = context.read<AuthProvider>().user;
+    if (actor == null) {
+      showAppSnackBar(context, 'Sesi pengguna tidak ditemukan', isError: true);
+      return;
+    }
 
     setState(() => _isSubmitting = true);
-    final userId = context.read<AuthProvider>().user?.id ?? '-';
     try {
       await context.read<ProductProvider>().restock(
         widget.products[selectedIndex],
         qty,
-        userId,
+        actor,
       );
       if (!mounted) return;
       Navigator.pop(context, true);
@@ -114,6 +120,7 @@ class _RestockFormState extends State<_RestockForm> {
           TextFormField(
             controller: _qtyController,
             keyboardType: TextInputType.number,
+            inputFormatters: [ThousandSeparatorInputFormatter()],
             validator: (value) =>
                 Validators.positiveNumber(value, field: 'Qty restock'),
             decoration: const InputDecoration(

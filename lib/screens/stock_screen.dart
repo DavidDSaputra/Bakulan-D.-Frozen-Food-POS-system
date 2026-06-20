@@ -5,6 +5,8 @@ import '../models/product.dart';
 import '../providers/auth_provider.dart';
 import '../providers/product_provider.dart';
 import '../utils/app_theme.dart';
+import '../utils/formatters.dart';
+import '../utils/number_input_formatter.dart';
 import '../widgets/empty_state.dart';
 import '../widgets/loading_indicator.dart';
 import '../widgets/product_tile.dart';
@@ -109,7 +111,7 @@ class _AddStockDialogState extends State<_AddStockDialog>
   Future<void> _save() async {
     if (!_formKey.currentState!.validate()) return;
 
-    final qty = int.tryParse(_qtyController.text.trim()) ?? 0;
+    final qty = AppFormatters.parseNumberInput(_qtyController.text) ?? 0;
     if (qty <= 0) {
       setState(() => _errorText = 'Qty harus lebih dari 0');
       return;
@@ -121,11 +123,14 @@ class _AddStockDialogState extends State<_AddStockDialog>
     });
 
     try {
-      final userId = context.read<AuthProvider>().user?.id ?? '-';
+      final actor = context.read<AuthProvider>().user;
+      if (actor == null) {
+        throw Exception('Sesi pengguna tidak ditemukan');
+      }
       await context.read<ProductProvider>().addStock(
         widget.product,
         qty,
-        userId,
+        actor,
       );
       if (!mounted) return;
       setState(() {
@@ -221,7 +226,7 @@ class _FormContent extends StatelessWidget {
           ),
           const SizedBox(height: 6),
           Text(
-            'Stok sekarang: ${product.stok}',
+            'Stok sekarang: ${AppFormatters.number(product.stok)}',
             style: Theme.of(context).textTheme.bodySmall?.copyWith(
               color: scheme.onSurfaceVariant,
               fontWeight: FontWeight.w700,
@@ -231,8 +236,9 @@ class _FormContent extends StatelessWidget {
           TextFormField(
             controller: controller,
             keyboardType: TextInputType.number,
+            inputFormatters: [ThousandSeparatorInputFormatter()],
             validator: (value) {
-              final qty = int.tryParse(value?.trim() ?? '');
+              final qty = AppFormatters.parseNumberInput(value);
               if (qty == null) return 'Qty harus berupa angka';
               if (qty <= 0) return 'Qty harus lebih dari 0';
               return null;
@@ -334,7 +340,7 @@ class _SuccessContent extends StatelessWidget {
         ),
         const SizedBox(height: 8),
         Text(
-          '${product.namaBarang} +$qtyAdded',
+          '${product.namaBarang} +${AppFormatters.number(qtyAdded)}',
           textAlign: TextAlign.center,
           style: Theme.of(context).textTheme.titleLarge?.copyWith(
             fontWeight: FontWeight.w900,

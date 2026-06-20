@@ -12,6 +12,7 @@ class StockMovement {
     required this.qty,
     required this.type,
     required this.userId,
+    this.userName = '-',
     this.note = '',
     this.source = StockMovementSource.sale,
     this.proofUrl = '',
@@ -23,6 +24,7 @@ class StockMovement {
   final int qty;
   final StockMovementType type;
   final String userId;
+  final String userName;
   final String note;
   final StockMovementSource source;
   final String proofUrl;
@@ -39,6 +41,10 @@ class StockMovement {
       qty: (data['qty'] as num?)?.toInt() ?? 0,
       type: StockMovementType.masuk,
       userId: data['id_user']?.toString() ?? '-',
+      userName:
+          data['nama_kasir']?.toString() ??
+          data['nama_user']?.toString() ??
+          '-',
       note: data['keterangan']?.toString() ?? '',
       source: StockMovementSource.restock,
       proofUrl: data['proof_url']?.toString() ?? '',
@@ -57,6 +63,10 @@ class StockMovement {
       qty: (data['qty'] as num?)?.toInt() ?? 0,
       type: StockMovementType.keluar,
       userId: data['id_user']?.toString() ?? '-',
+      userName:
+          data['nama_kasir']?.toString() ??
+          data['nama_user']?.toString() ??
+          '-',
       note: data['keterangan']?.toString() ?? '',
       source: StockMovementSource.sale,
       proofUrl: data['proof_url']?.toString() ?? '',
@@ -75,6 +85,10 @@ class StockMovement {
       qty: (data['qty'] as num?)?.toInt() ?? 0,
       type: StockMovementType.keluar,
       userId: data['id_user']?.toString() ?? '-',
+      userName:
+          data['nama_kasir']?.toString() ??
+          data['nama_user']?.toString() ??
+          '-',
       note: data['keterangan']?.toString() ?? '',
       source: StockMovementSource.opname,
       proofUrl: data['proof_url']?.toString() ?? '',

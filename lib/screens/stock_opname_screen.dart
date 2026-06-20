@@ -13,6 +13,7 @@ import '../providers/sales_provider.dart';
 import '../services/cloudinary_service.dart';
 import '../utils/app_theme.dart';
 import '../utils/formatters.dart';
+import '../utils/number_input_formatter.dart';
 import '../utils/snackbar.dart';
 import '../widgets/empty_state.dart';
 import '../widgets/loading_indicator.dart';
@@ -38,19 +39,18 @@ class _StockOpnameScreenState extends State<StockOpnameScreen> {
             return StreamBuilder<List<StockMovement>>(
               stream: context.read<ProductProvider>().watchOpnameMovements(),
               builder: (context, opnameSnapshot) {
-                if (!productSnapshot.hasData ||
-                    !trxSnapshot.hasData ||
-                    !opnameSnapshot.hasData) {
+                if (!productSnapshot.hasData) {
                   return const AppLoadingIndicator();
                 }
 
                 final products = productSnapshot.data!;
                 final range = _MonthRange.from(_month);
-                final monthlyTransactions = trxSnapshot.data!
-                    .where((trx) => range.contains(trx.tanggal))
-                    .toList();
+                final monthlyTransactions =
+                    (trxSnapshot.data ?? const <SalesTransaction>[])
+                        .where((trx) => range.contains(trx.tanggal))
+                        .toList();
                 final monthlyOpnameMovements =
-                    opnameSnapshot.data!
+                    (opnameSnapshot.data ?? const <StockMovement>[])
                         .where((movement) => range.contains(movement.tanggal))
                         .toList()
                       ..sort((a, b) => b.tanggal.compareTo(a.tanggal));
@@ -281,7 +281,7 @@ class _StockOpnameScreenState extends State<StockOpnameScreen> {
                                   ),
                                   const SizedBox(height: 4),
                                   Text(
-                                    'Beli ${AppFormatters.rupiah(product.hargaBeli)} | Jual ${AppFormatters.rupiah(product.hargaJual)}',
+                                    'Modal ${AppFormatters.rupiah(product.hargaBeli)} | Jual ${AppFormatters.rupiah(product.hargaJual)}',
                                     style: Theme.of(
                                       context,
                                     ).textTheme.bodySmall,
@@ -755,7 +755,7 @@ class _OpnameTile extends StatelessWidget {
                   ),
                   const SizedBox(height: 5),
                   Text(
-                    'Beli ${AppFormatters.rupiah(product.hargaBeli)} | Jual ${AppFormatters.rupiah(product.hargaJual)}',
+                    'Modal ${AppFormatters.rupiah(product.hargaBeli)} | Jual ${AppFormatters.rupiah(product.hargaJual)}',
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: Theme.of(context).textTheme.bodySmall,
@@ -786,9 +786,12 @@ class _OpnameTile extends StatelessWidget {
     bool value,
   ) async {
     try {
+      final actor = context.read<AuthProvider>().user;
+      if (actor == null) throw Exception('Sesi pengguna tidak ditemukan');
       await context.read<ProductProvider>().updateProductActive(
-        product.id,
+        product,
         value,
+        actor,
       );
       if (context.mounted) {
         showAppSnackBar(
@@ -808,7 +811,11 @@ class _OpnameTile extends StatelessWidget {
     Product product,
   ) async {
     final productProvider = context.read<ProductProvider>();
-    final userId = context.read<AuthProvider>().user?.id ?? '-';
+    final actor = context.read<AuthProvider>().user;
+    if (actor == null) {
+      showAppSnackBar(context, 'Sesi pengguna tidak ditemukan', isError: true);
+      return;
+    }
     final overlayContext = Overlay.maybeOf(context)?.context;
 
     final success = await showModalBottomSheet<bool>(
@@ -819,12 +826,12 @@ class _OpnameTile extends StatelessWidget {
       builder: (sheetContext) => _ReduceStockSheet(
         product: product,
         onSubmit: (qty, note, proofUrl) {
-          return productProvider.service.reduceStockForOpname(
-            product: product,
-            qty: qty,
-            note: note,
-            userId: userId,
-            proofUrl: proofUrl,
+          return productProvider.reduceStockForOpname(
+            product,
+            qty,
+            note,
+            actor,
+            proofUrl,
           );
         },
       ),
@@ -903,7 +910,7 @@ class _ReduceStockSheetState extends State<_ReduceStockSheet> {
         throw Exception('Upload bukti opname tidak menghasilkan URL.');
       }
       await widget.onSubmit(
-        int.parse(_qtyController.text.trim()),
+        AppFormatters.parseNumberInput(_qtyController.text)!,
         _noteController.text.trim(),
         proofUrl,
       );
@@ -942,7 +949,7 @@ class _ReduceStockSheetState extends State<_ReduceStockSheet> {
               ),
               const SizedBox(height: 4),
               Text(
-                '${product.namaBarang} - stok saat ini ${product.stok}',
+                '${product.namaBarang} - stok saat ini ${AppFormatters.number(product.stok)}',
                 style: Theme.of(context).textTheme.bodySmall?.copyWith(
                   color: Theme.of(context).colorScheme.onSurfaceVariant,
                   fontWeight: FontWeight.w700,
@@ -953,12 +960,13 @@ class _ReduceStockSheetState extends State<_ReduceStockSheet> {
                 controller: _qtyController,
                 enabled: !_isSaving,
                 keyboardType: TextInputType.number,
+                inputFormatters: [ThousandSeparatorInputFormatter()],
                 decoration: const InputDecoration(
                   labelText: 'Jumlah stok dikurangi',
                   prefixIcon: Icon(Icons.remove_circle_outline_rounded),
                 ),
                 validator: (value) {
-                  final qty = int.tryParse(value?.trim() ?? '');
+                  final qty = AppFormatters.parseNumberInput(value);
                   if (qty == null) return 'Jumlah harus berupa angka';
                   if (qty <= 0) return 'Jumlah harus lebih dari 0';
                   if (qty > product.stok) {
