@@ -7,6 +7,7 @@ import '../providers/auth_provider.dart';
 import '../providers/cart_provider.dart';
 import '../providers/sales_provider.dart';
 import '../utils/formatters.dart';
+import '../utils/number_input_formatter.dart';
 import '../utils/snackbar.dart';
 import '../widgets/app_button.dart';
 import 'receipt_screen.dart';
@@ -40,55 +41,71 @@ class _PaymentScreenState extends State<PaymentScreen> {
   }
 
   Future<void> _processPayment() async {
-    final paid = int.tryParse(_cashController.text.trim()) ?? 0;
+    if (context.read<SalesProvider>().isLoading) return;
+
+    final paid = AppFormatters.parseNumberInput(_cashController.text) ?? 0;
+    final items = List<SaleItem>.unmodifiable(widget.items);
+    final total = _total;
+    final method = _method;
+    final methodLabel = _paymentMethodLabel;
     if (_method == 'cash' && paid < _total) {
       showAppSnackBar(context, 'Nominal cash kurang dari total', isError: true);
       return;
     }
 
     if (_method == 'transfer') {
+      final actor = context.read<AuthProvider>().user;
       Navigator.push(
         context,
         MaterialPageRoute(
           builder: (_) => TransferProofScreen(
-            items: widget.items,
-            method: _paymentMethodLabel,
+            items: items,
+            method: methodLabel,
             option: _transferOption,
+            actor: actor,
           ),
         ),
       );
       return;
     }
 
-    final userId = context.read<AuthProvider>().user?.id ?? '-';
+    final actor = context.read<AuthProvider>().user;
+    if (actor == null) {
+      showAppSnackBar(context, 'Sesi pengguna tidak ditemukan', isError: true);
+      return;
+    }
     try {
       await context.read<SalesProvider>().processSale(
-        items: widget.items,
-        metodePembayaran: _paymentMethodLabel,
-        userId: userId,
+        items: items,
+        metodePembayaran: methodLabel,
+        actor: actor,
       );
       if (!mounted) return;
       context.read<CartProvider>().clear();
-      showAppSnackBar(context, 'Transaksi berhasil');
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(
           builder: (_) => ReceiptScreen(
-            items: widget.items,
-            method: _paymentMethodLabel,
-            paid: _method == 'cash' ? paid : _total,
+            items: items,
+            method: methodLabel,
+            paid: method == 'cash' ? paid : total,
+            cashierName: actor.nama,
           ),
         ),
       );
     } catch (error) {
       if (mounted) {
-        showAppSnackBar(
-          context,
-          error.toString().replaceAll('Exception: ', ''),
-          isError: true,
-        );
+        showAppSnackBar(context, _paymentErrorMessage(error), isError: true);
       }
     }
+  }
+
+  String _paymentErrorMessage(Object error) {
+    final message = error.toString().replaceAll('Exception: ', '');
+    if (message.contains('cloud_firestore/permission-denied')) {
+      return 'Firestore menolak update stok. Publish firestore.rules terbaru dulu.';
+    }
+    return message;
   }
 
   @override
@@ -181,6 +198,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
             TextField(
               controller: _cashController,
               keyboardType: TextInputType.number,
+              inputFormatters: [ThousandSeparatorInputFormatter()],
               decoration: const InputDecoration(
                 labelText: 'Uang diterima',
                 prefixIcon: Icon(Icons.attach_money_rounded),

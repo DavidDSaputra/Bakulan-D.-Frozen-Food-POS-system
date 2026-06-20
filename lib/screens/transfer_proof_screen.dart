@@ -4,6 +4,7 @@ import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
 
 import '../models/sale_item.dart';
+import '../models/app_user.dart';
 import '../models/transfer_payment_option.dart';
 import '../providers/auth_provider.dart';
 import '../providers/cart_provider.dart';
@@ -20,11 +21,13 @@ class TransferProofScreen extends StatefulWidget {
     required this.items,
     required this.method,
     required this.option,
+    required this.actor,
   });
 
   final List<SaleItem> items;
   final String method;
   final TransferPaymentOption option;
+  final AppUser? actor;
 
   @override
   State<TransferProofScreen> createState() => _TransferProofScreenState();
@@ -75,6 +78,10 @@ class _TransferProofScreenState extends State<TransferProofScreen> {
     }
 
     setState(() => _isSubmitting = true);
+    final items = List<SaleItem>.unmodifiable(widget.items);
+    final method = widget.method;
+    final option = widget.option;
+    final total = _total;
     try {
       final proofUrl = await _cloudinaryService.uploadPaymentProof(
         bytes: proofBytes,
@@ -85,40 +92,47 @@ class _TransferProofScreenState extends State<TransferProofScreen> {
       }
       if (!mounted) return;
 
-      final userId = context.read<AuthProvider>().user?.id ?? '-';
+      final actor = widget.actor ?? context.read<AuthProvider>().user;
+      if (actor == null) {
+        throw Exception('Sesi pengguna tidak ditemukan');
+      }
       await context.read<SalesProvider>().processSale(
-        items: widget.items,
-        metodePembayaran: widget.method,
-        userId: userId,
+        items: items,
+        metodePembayaran: method,
+        actor: actor,
         paymentProofUrl: proofUrl,
-        paymentAccountName: widget.option.accountName,
-        paymentAccountNumber: widget.option.accountNumber,
+        paymentAccountName: option.accountName,
+        paymentAccountNumber: option.accountNumber,
       );
       if (!mounted) return;
 
       context.read<CartProvider>().clear();
-      showAppSnackBar(context, 'Transaksi transfer berhasil');
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(
           builder: (_) => ReceiptScreen(
-            items: widget.items,
-            method: widget.method,
-            paid: _total,
+            items: items,
+            method: method,
+            paid: total,
+            cashierName: actor.nama,
           ),
         ),
       );
     } catch (error) {
       if (mounted) {
-        showAppSnackBar(
-          context,
-          error.toString().replaceAll('Exception: ', ''),
-          isError: true,
-        );
+        showAppSnackBar(context, _paymentErrorMessage(error), isError: true);
       }
     } finally {
       if (mounted) setState(() => _isSubmitting = false);
     }
+  }
+
+  String _paymentErrorMessage(Object error) {
+    final message = error.toString().replaceAll('Exception: ', '');
+    if (message.contains('cloud_firestore/permission-denied')) {
+      return 'Firestore menolak update stok. Publish firestore.rules terbaru dulu.';
+    }
+    return message;
   }
 
   @override

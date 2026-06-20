@@ -12,11 +12,13 @@ class ReceiptScreen extends StatefulWidget {
     required this.items,
     required this.method,
     required this.paid,
+    required this.cashierName,
   });
 
   final List<SaleItem> items;
   final String method;
   final int paid;
+  final String cashierName;
 
   @override
   State<ReceiptScreen> createState() => _ReceiptScreenState();
@@ -67,6 +69,7 @@ class _ReceiptScreenState extends State<ReceiptScreen>
         items: widget.items,
         method: widget.method,
         paid: widget.paid,
+        cashierName: widget.cashierName,
       );
     } catch (_) {
       if (!mounted) return;
@@ -88,6 +91,7 @@ class _ReceiptScreenState extends State<ReceiptScreen>
         total: total,
         paid: widget.paid,
         change: change,
+        cashierName: widget.cashierName,
       ),
     );
   }
@@ -148,7 +152,7 @@ class _ReceiptScreenState extends State<ReceiptScreen>
                         ),
                         const SizedBox(height: 18),
                         Text(
-                          'Sale Completed Successfully',
+                          'Transaksi Berhasil',
                           textAlign: TextAlign.center,
                           style: Theme.of(context).textTheme.titleMedium
                               ?.copyWith(
@@ -166,7 +170,7 @@ class _ReceiptScreenState extends State<ReceiptScreen>
                                   color: scheme.onSurface,
                                 ),
                             children: [
-                              const TextSpan(text: 'TOTAL AMOUNT '),
+                              const TextSpan(text: 'TOTAL '),
                               TextSpan(
                                 text: AppFormatters.rupiah(total),
                                 style: const TextStyle(
@@ -178,7 +182,7 @@ class _ReceiptScreenState extends State<ReceiptScreen>
                         ),
                         const SizedBox(height: 6),
                         Text(
-                          'Payment Type : ${widget.method.toUpperCase()}',
+                          'Metode Pembayaran: ${widget.method.toUpperCase()}',
                           textAlign: TextAlign.center,
                           style: Theme.of(context).textTheme.bodyMedium
                               ?.copyWith(
@@ -198,7 +202,7 @@ class _ReceiptScreenState extends State<ReceiptScreen>
                             backgroundColor: AppTheme.brandPrimary,
                             foregroundColor: Colors.white,
                           ),
-                          child: const Text('New Sale'),
+                          child: const Text('Transaksi Baru'),
                         ),
                         const SizedBox(height: 10),
                         OutlinedButton(
@@ -295,6 +299,7 @@ class _ReceiptPreviewSheet extends StatelessWidget {
     required this.total,
     required this.paid,
     required this.change,
+    required this.cashierName,
   });
 
   final String code;
@@ -303,6 +308,7 @@ class _ReceiptPreviewSheet extends StatelessWidget {
   final int total;
   final int paid;
   final int change;
+  final String cashierName;
 
   bool get _isCash => method == 'cash';
 
@@ -407,6 +413,10 @@ class _ReceiptPreviewSheet extends StatelessWidget {
                         _ReceiptInfoRow(
                           label: 'Metode bayar',
                           value: method.toUpperCase(),
+                        ),
+                        _ReceiptInfoRow(
+                          label: 'Nama Kasir',
+                          value: cashierName,
                         ),
                         const SizedBox(height: 10),
                         _ReceiptInfoRow(

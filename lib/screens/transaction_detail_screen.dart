@@ -1,12 +1,26 @@
 import 'package:flutter/material.dart';
 
 import '../models/sales_transaction.dart';
+import '../services/receipt_pdf_service.dart';
 import '../utils/formatters.dart';
+import '../utils/snackbar.dart';
 
 class TransactionDetailScreen extends StatelessWidget {
   const TransactionDetailScreen({super.key, required this.transaction});
 
   final SalesTransaction transaction;
+
+  Future<void> _reprintReceipt(BuildContext context) async {
+    try {
+      await ReceiptPdfService().shareTransactionReceipt(
+        transaction: transaction,
+      );
+    } catch (_) {
+      if (context.mounted) {
+        showAppSnackBar(context, 'Gagal mencetak ulang struk', isError: true);
+      }
+    }
+  }
 
   bool get _hasProof => (transaction.paymentProofUrl ?? '').trim().isNotEmpty;
   bool get _hasAccount =>
@@ -31,7 +45,16 @@ class TransactionDetailScreen extends StatelessWidget {
     final statusLabel = _statusLabel;
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Detail Transaksi')),
+      appBar: AppBar(
+        title: const Text('Detail Transaksi'),
+        actions: [
+          IconButton(
+            tooltip: 'Cetak ulang struk',
+            onPressed: () => _reprintReceipt(context),
+            icon: const Icon(Icons.print_rounded),
+          ),
+        ],
+      ),
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
@@ -80,7 +103,7 @@ class TransactionDetailScreen extends StatelessWidget {
                     ),
                   if (transaction.hargaBeli > 0)
                     _detailRow(
-                      'Harga Beli',
+                      'Harga Modal',
                       AppFormatters.rupiah(transaction.hargaBeli),
                     ),
                   _detailRow(
@@ -94,7 +117,7 @@ class TransactionDetailScreen extends StatelessWidget {
                     ),
                   _detailRow('Metode', transaction.metodePembayaran),
                   if (statusLabel != null) _detailRow('Status', statusLabel),
-                  _detailRow('ID Kasir', transaction.idUser),
+                  _detailRow('Nama Kasir', transaction.namaUser),
                 ],
               ),
             ),
@@ -141,6 +164,12 @@ class TransactionDetailScreen extends StatelessWidget {
                   ),
                 ),
             ],
+          ),
+          const SizedBox(height: 14),
+          FilledButton.icon(
+            onPressed: () => _reprintReceipt(context),
+            icon: const Icon(Icons.print_rounded),
+            label: const Text('Cetak Struk Lagi'),
           ),
         ],
       ),

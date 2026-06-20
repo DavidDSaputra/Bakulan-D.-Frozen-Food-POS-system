@@ -5,6 +5,9 @@ import 'package:pdf/widgets.dart' as pw;
 import 'package:printing/printing.dart';
 
 import '../models/sale_item.dart';
+import '../models/product.dart';
+import '../models/sales_invoice.dart';
+import '../models/sales_transaction.dart';
 import '../utils/formatters.dart';
 
 class ReceiptPdfService {
@@ -12,11 +15,89 @@ class ReceiptPdfService {
     required List<SaleItem> items,
     required String method,
     required int paid,
+    required String cashierName,
   }) async {
-    final bytes = await _buildReceipt(items: items, method: method, paid: paid);
+    final bytes = await _buildReceipt(
+      items: items,
+      method: method,
+      paid: paid,
+      cashierName: cashierName,
+    );
     await Printing.sharePdf(
       bytes: bytes,
       filename: 'struk-bakulan-${DateTime.now().millisecondsSinceEpoch}.pdf',
+    );
+  }
+
+  Future<void> shareTransactionReceipt({
+    required SalesTransaction transaction,
+  }) async {
+    final item = SaleItem(
+      product: Product(
+        id: transaction.barangId,
+        namaBarang: transaction.namaBarang,
+        hargaBeli: transaction.hargaBeli,
+        harga: transaction.hargaJual > 0
+            ? transaction.hargaJual
+            : transaction.totalHarga,
+        stok: 0,
+        kategoriId: '',
+      ),
+      qty: transaction.qty,
+    );
+
+    final bytes = await _buildReceipt(
+      items: [item],
+      method: transaction.metodePembayaran,
+      paid: transaction.totalHarga,
+      cashierName: transaction.namaUser,
+      printedAt: transaction.tanggal,
+      showCashBreakdown: false,
+    );
+
+    await Printing.sharePdf(
+      bytes: bytes,
+      filename:
+          'struk-transaksi-${transaction.id}-${DateTime.now().millisecondsSinceEpoch}.pdf',
+    );
+  }
+
+  Future<void> shareInvoiceReceipt({
+    required SalesInvoice invoice,
+    required List<SalesTransaction> items,
+  }) async {
+    final saleItems = items
+        .map(
+          (transaction) => SaleItem(
+            product: Product(
+              id: transaction.barangId,
+              namaBarang: transaction.namaBarang,
+              hargaBeli: transaction.hargaBeli,
+              harga: transaction.hargaJual > 0
+                  ? transaction.hargaJual
+                  : transaction.totalHarga,
+              stok: 0,
+              kategoriId: '',
+            ),
+            qty: transaction.qty,
+          ),
+        )
+        .toList();
+
+    final bytes = await _buildReceipt(
+      items: saleItems,
+      method: invoice.metodePembayaran,
+      paid: invoice.totalHarga,
+      cashierName: invoice.namaUser,
+      printedAt: invoice.tanggal,
+      showCashBreakdown: false,
+      receiptCode: invoice.invoiceCode,
+    );
+
+    await Printing.sharePdf(
+      bytes: bytes,
+      filename:
+          'struk-${invoice.invoiceCode}-${DateTime.now().millisecondsSinceEpoch}.pdf',
     );
   }
 
@@ -24,6 +105,10 @@ class ReceiptPdfService {
     required List<SaleItem> items,
     required String method,
     required int paid,
+    required String cashierName,
+    DateTime? printedAt,
+    bool showCashBreakdown = true,
+    String? receiptCode,
   }) async {
     final document = pw.Document();
     final total = items.fold<int>(0, (sum, item) => sum + item.subtotal);
@@ -47,7 +132,12 @@ class ReceiptPdfService {
                 ),
               ),
               pw.SizedBox(height: 4),
-              pw.Center(child: pw.Text(AppFormatters.date(DateTime.now()))),
+              if ((receiptCode ?? '').trim().isNotEmpty)
+                pw.Center(child: pw.Text(receiptCode!.trim())),
+              if ((receiptCode ?? '').trim().isNotEmpty) pw.SizedBox(height: 4),
+              pw.Center(
+                child: pw.Text(AppFormatters.date(printedAt ?? DateTime.now())),
+              ),
               pw.Divider(height: 20),
               for (final item in items) ...[
                 pw.Row(
@@ -63,8 +153,9 @@ class ReceiptPdfService {
               ],
               pw.Divider(height: 20),
               _row('Metode', method.toUpperCase()),
+              _row('Nama Kasir', cashierName),
               _row('Total', AppFormatters.rupiah(total), bold: true),
-              if (method == 'cash') ...[
+              if (method == 'cash' && showCashBreakdown) ...[
                 _row('Dibayar', AppFormatters.rupiah(paid)),
                 _row('Kembali', AppFormatters.rupiah(change), bold: true),
               ],
